@@ -1,4 +1,0 @@
-[[dependency]]
-file = "lib_a/a_impl.vhd"
-depends_on = "lib_b/b_pkg.vhd"
-reason = "example explicit dependency"

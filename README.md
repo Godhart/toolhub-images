@@ -1,18 +1,31 @@
-# ToolHub TWYLT Container Images 0.2.0
+# ToolHub TWYLT Container Images 0.3.0
 
 Образы Docker/Podman для ToolHub и запуска TWYLT-тулов с хоста.
-Один Dockerfile содержит пять именованных target; отдельные Dockerfile не нужны.
+Один Dockerfile содержит пять основных target и совместимый псевдоним okf; отдельные Dockerfile не нужны.
 
 Отдельный образ OKF, его инициализация и работа с тулом описаны в [README-OKF.md](README-OKF.md).
+
+## Исходники из GitHub
+
+`vendor/` удалён. При сборке отдельная стадия скачивает проекты из GitHub по
+`sources.lock.json`, проверяет SHA и передаёт нужные исходники в стадии сборки.
+В архиве остаются только файлы toolhub-images: Dockerfile, настройки, небольшие
+интеграционные скрипты, TWYLT-адаптер и собственные тесты. Git загрузчика не
+попадает в базовый runtime. Тулы по-прежнему подключаются через volume.
+
+Канонические имена взяты из [TWYLT RESOURCES](https://github.com/Godhart/twylt/blob/main/RESOURCES.md).
+Полный перечень ссылок и правила обновления — [SOURCES.md](SOURCES.md).
+При переходе с 0.2.0 удалите старый каталог vendor: распаковка поверх старой версии
+сама не удалит его. Он также исключён из build context через .dockerignore.
 
 ## Варианты
 
 | Target | Состав |
 |---|---|
-| `base` (по умолчанию) | ToolHub + Bun 1.4.2, Node.js 22, Python 3.11, TWYLT Python 1.0.0, локальный `@twylt/core` 0.1.0, TypeBox, Ajv, tsx, TypeScript и все зависимости filesystem-twylt-pack 0.1.0 |
+| `base` (по умолчанию) | ToolHub + Bun 1.4.2, Node.js 22, Python 3.11, TWYLT Python 1.0.0, `@twylt/core` 0.2.3 из GitHub, TypeBox, Ajv, tsx, TypeScript и все зависимости twylt-pack-filesystem 0.5.0 |
 | `git` | base + Git, SSH-клиент, HTTPS-сертификаты |
 | `docs` | git + MkDocs/Material, Sphinx/MyST, Pandoc, Graphviz, Doxygen, TypeDoc, markdownlint-cli2, python-docx, openpyxl, python-pptx, pypdf, ReportLab, Pillow; XeLaTeX и кириллица |
-| `okf` | docs + OKF Workspace 0.2.0 и @copperbox/okf-mcp 2.1.0; TWYLT-адаптер в tools/ для подключения через volume |
+| `docsanity` (`okf` — псевдоним) | docs + docsanity / OKF Workspace 0.2.0 и @copperbox/okf-mcp 2.1.0; TWYLT-адаптер в tools/ для подключения через volume |
 | `hdl` | git + hdl-order 0.7.0 с extra `twylt`, VUnit HDL 4.7.1, Graphviz |
 
 `docs` предназначен для Markdown/RST/API-документации, сайтов и PDF через XeLaTeX,
@@ -32,7 +45,7 @@ docker build --target base -t toolhub-twylt:base .
 docker build --target git  -t toolhub-twylt:git .
 docker build --target docs -t toolhub-twylt:docs .
 docker build --target hdl  -t toolhub-twylt:hdl .
-docker build --target okf  -t toolhub-twylt:okf .
+docker build --target docsanity -t toolhub-twylt:docsanity .
 ```
 
 Для Podman замените `docker` на `podman`. BuildKit-специфичных инструкций нет.
@@ -46,8 +59,9 @@ podman build --target docs --build-arg WITH_LATEX=0 -t toolhub-twylt:docs .
 Для закрепления базовых образов доступны `NODE_IMAGE` и `BUN_IMAGE`, включая
 значения с `@sha256:...`. По умолчанию Node использует обновляемый тег 22-bookworm-slim,
 Bun — тег 1.4.2. Это не полностью воспроизводимая сборка: apt и часть Python/Node
-зависимостей допускают обновления. ToolHub закреплён исходным снимком и bun.lock;
-TWYLT TypeScript имеет package-lock.json.
+зависимостей допускают обновления. GitHub-проекты закреплены полными commit SHA в sources.lock.json. npm-проекты
+собираются через npm ci. ToolHub требует нормализации исходного bun.lock при
+bun install; его транзитивные зависимости не объявляются полностью закреплёнными.
 
 ## Дополнительные зависимости
 

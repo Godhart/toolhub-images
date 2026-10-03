@@ -1,4 +1,4 @@
-"""End-to-end adapter tests. Requires built vendor/okf-workspace, Node 22 and Git."""
+"""End-to-end adapter tests. Requires built .sources/docsanity, Node 22 and Git."""
 import json
 import os
 from pathlib import Path
@@ -9,7 +9,7 @@ import unittest
 
 ROOT = Path(__file__).resolve().parents[1]
 TOOL = ROOT / 'tools/okf_workspace/tool.py'
-CLI = ROOT / 'vendor/okf-workspace/dist/cli.js'
+CLI = Path(os.environ.get('OKF_WORKSPACE_CLI', str(ROOT / '.sources/docsanity/dist/cli.js')))
 
 class AdapterTest(unittest.TestCase):
     @classmethod

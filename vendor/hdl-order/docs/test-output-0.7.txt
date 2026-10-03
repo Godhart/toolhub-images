@@ -1,5 +1,0 @@
-....x................................................................... [ 98%]
-.                                                                        [100%]
-=========================== short test summary info ============================
-XFAIL tests/test_known_limitations.py::test_macro_generated_module_is_not_yet_supported - 0.3 symbol scanner is intentionally not a full SV preprocessor/parser
-72 passed, 1 xfailed in 14.08s

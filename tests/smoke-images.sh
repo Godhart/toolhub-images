@@ -2,7 +2,7 @@
 set -eu
 engine=${1:-docker}
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-for variant in base git docs hdl okf; do
+for variant in base git docs hdl docsanity; do
   "$engine" run --rm --network none --read-only --tmpfs /tmp:rw,mode=1777 \
     "toolhub-twylt:$variant" python -c 'import twylt, pydantic, yaml, tomli_w, markdown_it, charset_normalizer; print("Python OK")'
   "$engine" run --rm --network none --read-only --tmpfs /tmp:rw,mode=1777 \
@@ -12,9 +12,9 @@ done
 "$engine" run --rm toolhub-twylt:git git --version
 "$engine" run --rm toolhub-twylt:docs sh -ec 'mkdocs --version; sphinx-build --version; pandoc --version; dot -V; doxygen --version; typedoc --version'
 "$engine" run --rm toolhub-twylt:hdl hdl-order --help
-"$engine" run --rm --network none toolhub-twylt:okf okf-workspace --version
+"$engine" run --rm --network none toolhub-twylt:docsanity okf-workspace --version
 "$engine" run --rm --network none --read-only --tmpfs /tmp:rw,mode=1777 \
-  -v "$root/tools:/tools:ro" toolhub-twylt:okf \
+  -v "$root/tools:/tools:ro" toolhub-twylt:docsanity \
   python /tools/okf_workspace/run.py '{"operation":"describe_tools"}' 
 # Temporary test data only. No production ports or volumes are used.
 data=$(mktemp -d)

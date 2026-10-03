@@ -14,3 +14,7 @@ __pycache__/
 dist/
 build/
 *.egg-info/
+
+# Container build/test downloads
+.sources/
+vendor/

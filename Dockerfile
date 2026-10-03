@@ -1,8 +1,16 @@
 # Docker / Podman; build context = this directory.
-# Five targets: base (default), git, docs, hdl, okf.
+# Targets: base (default), git, docs, hdl, docsanity; okf is a compatibility alias.
 ARG NODE_IMAGE=node:22-bookworm-slim
 ARG BUN_IMAGE=oven/bun:1.4.2
 FROM ${BUN_IMAGE} AS bun-binary
+# Git exists only in this build stage; base runtime does not gain Git.
+FROM ${NODE_IMAGE} AS sources
+RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates python3 \
+ && rm -rf /var/lib/apt/lists/*
+COPY sources.lock.json /build/sources.lock.json
+COPY scripts/fetch-sources.py /build/fetch-sources.py
+RUN python3 /build/fetch-sources.py --lock /build/sources.lock.json --dest /sources
+
 FROM ${NODE_IMAGE} AS common
 USER root
 COPY --from=bun-binary /usr/local/bin/bun /usr/local/bin/bun
@@ -19,14 +27,17 @@ ENV PATH="/opt/venv/bin:/opt/tool-runtime/node_modules/.bin:${PATH}" \
     NODE_PATH=/opt/tool-runtime/node_modules
 
 # ---- Python: core + filesystem toolpack dependencies ----
-COPY config/python-base.txt /opt/config/python-base.txt
-RUN pip install --no-cache-dir -r /opt/config/python-base.txt
+COPY --from=sources /sources/twylt /opt/twylt-source
+COPY --from=sources /sources/twylt-pack-filesystem/requirements.txt /opt/config/python-base.txt
+RUN pip install --no-cache-dir /opt/twylt-source \
+ && pip install --no-cache-dir -r /opt/config/python-base.txt \
+ && rm -rf /opt/twylt-source
 # ---- EXTRA PYTHON PACKAGES: edit config/python-extra.txt ----
 COPY config/python-extra.txt /opt/config/python-extra.txt
 RUN pip install --no-cache-dir -r /opt/config/python-extra.txt
 
-# ---- Node / TypeScript / TWYLT (the local, unpublished implementation) ----
-COPY vendor/twylt-typescript /opt/twylt-typescript
+# ---- Node / TypeScript / TWYLT (GitHub revision from sources.lock.json) ----
+COPY --from=sources /sources/twylt-typescript /opt/twylt-typescript
 RUN cd /opt/twylt-typescript && npm ci --include=dev && npm test
 COPY config/node-base.json /opt/tool-runtime/package.json
 # ---- EXTRA NODE PACKAGES: edit dependencies in config/node-extra.json ----
@@ -36,10 +47,15 @@ RUN node -e 'const fs=require("fs"); const p="/opt/tool-runtime/package.json"; c
  && ln -s /opt/tool-runtime/node_modules /node_modules \
  && node --input-type=module -e 'import("@twylt/core")'
 
-# ---- ToolHub, pinned source snapshot; no tool source copied into /tools ----
-COPY vendor/toolhub /opt/toolhub
+# ---- ToolHub from GitHub; fail-fast container-only adaptations ----
+COPY --from=sources /sources/toolhub /opt/toolhub
+COPY scripts/configure-toolhub.py /opt/configure-toolhub.py
+COPY sources.lock.json /opt/config/sources.lock.json
+RUN python3 /opt/configure-toolhub.py /opt/toolhub
 WORKDIR /opt/toolhub
-RUN NODE_ENV=development bun install --frozen-lockfile \
+# The pinned upstream bun.lock needs normalization with Bun 1.4.2.
+# This does not claim a fully locked transitive dependency build.
+RUN NODE_ENV=development bun install \
  && bun run db:generate \
  && bun run build:admin
 COPY scripts/container-init.ts /opt/toolhub/container-init.ts
@@ -78,7 +94,7 @@ USER 1000:1000
 # ---- Extended: hdl-order 0.7.0 + TWYLT wrappers' backend (includes Git) ----
 FROM git AS hdl
 USER root
-COPY vendor/hdl-order /opt/hdl-order-source
+COPY --from=sources /sources/hdl-order /opt/hdl-order-source
 RUN apt-get update && apt-get install -y --no-install-recommends graphviz \
  && rm -rf /var/lib/apt/lists/* \
  && pip install --no-cache-dir '/opt/hdl-order-source[twylt]' \
@@ -87,9 +103,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends graphviz \
 USER 1000:1000
 
 # ---- Extended: OKF documentation workspace (includes docs + Git) ----
-FROM docs AS okf
+FROM docs AS docsanity
 USER root
-COPY vendor/okf-workspace /opt/okf-workspace
+COPY --from=sources /sources/docsanity /opt/okf-workspace
 RUN cd /opt/okf-workspace && npm ci --include=dev && npm run build \
  && npm prune --omit=dev \
  && chmod 755 dist/cli.js \
@@ -98,6 +114,9 @@ RUN cd /opt/okf-workspace && npm ci --include=dev && npm run build \
  && mkdir -p /okf-state && chown 1000:1000 /okf-state
 ENV OKF_WORKSPACE_STATE=/okf-state
 USER 1000:1000
+
+# Previous public target retained for existing commands.
+FROM docsanity AS okf
 
 # Default build stays the small base variant.
 FROM common AS base

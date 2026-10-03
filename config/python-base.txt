@@ -1,6 +1,0 @@
-twylt==1.0.0
-pydantic>=2,<3
-PyYAML>=6,<7
-tomli-w>=1,<2
-markdown-it-py>=3,<5
-charset-normalizer>=3,<4

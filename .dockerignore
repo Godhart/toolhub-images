@@ -13,3 +13,5 @@ tools
 **/.pytest_cache
 **/*.tsbuildinfo
 **/build
+.sources
+vendor

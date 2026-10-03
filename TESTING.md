@@ -32,3 +32,16 @@ Documentation target и полный container smoke test требуют про�
 - Полная сборка target okf и container smoke не выполнялись: Docker/Podman
   в среде отсутствуют. Результаты предыдущей версии выше не означают повторный
   запуск всех базовых проверок в 0.2.0.
+
+## Проверки 0.3.0 — GitHub sources
+
+- Реальная загрузка всех шести репозиториев новым fetch-sources.py; каждый checkout
+  проверен по sources.lock.json. Исходники не включены в дистрибутив.
+- configure-toolhub.py применён к чистому GitHub ToolHub без ошибки preconditions.
+- TWYLT Python 1.0.0 собран и установлен из скачанного исходника.
+- TWYLT TypeScript 0.2.3: npm ci, сборка, 7 тестов и package-import check прошли.
+- docsanity 0.2.0: npm ci и сборка прошли.
+- test_okf_adapter.py с GitHub docsanity: 3 теста прошли.
+- Проверены Python/shell syntax и git diff --check.
+- Docker/Podman build и smoke-images.sh не выполнялись: движки недоступны.
+- Исторические проверки выше относятся к указанным версиям, не к новому прогону.

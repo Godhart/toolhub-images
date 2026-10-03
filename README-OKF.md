@@ -1,15 +1,18 @@
-# Отдельный образ OKF
+# Образ docsanity (OKF)
 
-`docs` не содержал OKF. Новый target `okf` наследует `docs`: все инструменты
+`docs` не содержал OKF. Новый target `docsanity` наследует `docs`: все инструменты
 документации и Git остаются доступны, добавляются OKF Workspace 0.2.0 и его
-зависимость @copperbox/okf-mcp 2.1.0. Исходники OKF и lock-файл включены в vendor/.
+зависимость @copperbox/okf-mcp 2.1.0. Исходники скачиваются из https://github.com/Godhart/docsanity по sources.lock.json.
+Проект на GitHub называется docsanity; upstream package/CLI пока называются
+okf-workspace, поэтому команда, переменная OKF_WORKSPACE_STATE и /okf-state
+сохранены. Старый target okf остаётся псевдонимом docsanity.
 
 ## Сборка
 
 ```bash
-docker build --target okf -t toolhub-twylt:okf .
+docker build --target docsanity -t toolhub-twylt:docsanity .
 # Podman:
-podman build --target okf -t toolhub-twylt:okf .
+podman build --target docsanity -t toolhub-twylt:docsanity .
 ```
 
 Можно добавить `--build-arg WITH_LATEX=0` для сборки без TeX. Общие секции
@@ -66,7 +69,7 @@ git -C workspace/docs commit -m 'Initialize documentation repository'
 
 docker run --rm --network none --user "$(id -u):$(id -g)" \
   -v "$PWD/okf-state:/okf-state" -v "$PWD/workspace:/workspace" \
-  toolhub-twylt:okf okf-workspace init /workspace/okf-workspace.json
+  toolhub-twylt:docsanity okf-workspace init /workspace/okf-workspace.json
 ```
 
 Для собственного проекта измените repositories/domains/coverage в конфигурации.
@@ -82,7 +85,7 @@ Git-ревизии; незакоммиченные файлы не попада�
 ## Сервер ToolHub
 
 ```bash
-docker compose -f compose.yaml -f compose.okf.yaml up -d --build
+docker compose -f compose.yaml -f compose.docsanity.yaml up -d --build
 ```
 
 Откройте http://localhost:3000/admin/ . Подключённый /tools уже содержит обёртку,
@@ -122,7 +125,7 @@ docker run --rm --network none --user "$(id -u):$(id -g)" \
   --cap-drop ALL --security-opt no-new-privileges \
   -v "$PWD/tools:/tools:ro" -v "$PWD/okf-state:/okf-state" \
   -v "$PWD/workspace:/workspace" \
-  toolhub-twylt:okf python /tools/okf_workspace/run.py \
+  toolhub-twylt:docsanity python /tools/okf_workspace/run.py \
   '{"operation":"documentation_plan","arguments":{}}'
 ```
 
@@ -141,7 +144,7 @@ docker run --rm --network none --user "$(id -u):$(id -g)" \
 5. При обновлении читайте nodes_get: используйте актуальные snapshot и content_hash
    в операции replace/patch/replace_section. Для review задаются причины и evidence.
 
-Полные контракты и примеры находятся в vendor/okf-workspace/README.md,
+Полные контракты и примеры находятся в [репозитории docsanity](https://github.com/Godhart/docsanity): README.md,
 docs/API.md и schemas/tools.json. Обёртка сохраняет штатные проверки конфликтов,
 идемпотентность и двухэтапный протокол. Init и export доступны через CLI отдельно.
 
@@ -150,7 +153,7 @@ docs/API.md и schemas/tools.json. Обёртка сохраняет штатн�
 ```bash
 docker run --rm --network none --user "$(id -u):$(id -g)" \
   -v "$PWD/okf-state:/okf-state" -v "$PWD/workspace:/workspace" \
-  toolhub-twylt:okf okf-workspace export /workspace/export-001
+  toolhub-twylt:docsanity okf-workspace export /workspace/export-001
 ```
 
 Выберите новый каталог для каждого экспорта. Результат содержит обычные Git-копии
@@ -159,7 +162,7 @@ Pandoc и прочие средства docs над экспортом. Их к�
 проекту; образ не подменяет их автоматически.
 
 MCP также доступен: команда `okf-workspace mcp`, транспорт stdio. Для одноразового
-MCP-контейнера используйте `docker run --rm -i ... toolhub-twylt:okf okf-workspace mcp`
+MCP-контейнера используйте `docker run --rm -i ... toolhub-twylt:docsanity okf-workspace mcp`
 с теми же mounts и без `-t`. Вместо этого ToolHub может запускать CLI локально
 внутри уже работающего контейнера; Docker socket ему не нужен.
 
@@ -168,7 +171,8 @@ MCP-контейнера используйте `docker run --rm -i ... toolhub-
 Сборка TypeScript и интеграционные тесты адаптера выполняются без контейнера:
 
 ```bash
-cd vendor/okf-workspace
+python3 scripts/fetch-sources.py --dest .sources docsanity
+cd .sources/docsanity
 npm ci
 npm run build
 cd ../..
@@ -179,7 +183,7 @@ python tests/test_okf_adapter.py
 проверяет prepare/apply, обновление по хешу, export, схемы и открытый stdin.
 Проверки собранных образов — tests/smoke-images.sh. История результатов — TESTING.md.
 
-Образ `okf` не содержит hdl-order: при необходимости вызывайте отдельный `hdl`
+Образ `docsanity` не содержит hdl-order: при необходимости вызывайте отдельный `hdl`
 и передавайте dependency-manifest JSON в dependencies_import_prepare. Сохраняются
 ограничения OKF 0.2.0: нет автоматического merge внешних правок, автогенерации
 текста моделью или автоматической оценки инженерной полноты документа.

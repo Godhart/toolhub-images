@@ -1,1 +1,0 @@
-# ADR-0006: VUnit 4.7.1 adapter\nStatus: accepted\n\nVUnit-specific types and object semantics are isolated behind `VUnitAdapter`. Paths become strings at the boundary, built-in HDL sources are disabled, and hdl-order compares stable paths/library names rather than Python wrapper identity.\n
