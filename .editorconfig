@@ -1,0 +1,33 @@
+root = true
+
+[*]
+charset = "utf-8"
+end_of_line = lf
+indent_size = 4
+indent_style = space
+insert_final_newline = false
+trim_trailing_whitespace = true
+
+[.editorconfig]
+insert_final_newline = true
+
+[.gitignore]
+insert_final_newline = true
+
+[.gitattributes]
+insert_final_newline = true
+
+[.dockerignore]
+insert_final_newline = true
+
+[Makefile]
+indent_style = tab
+insert_final_newline = true
+
+[*.env]
+indent_style = tab
+insert_final_newline = true
+
+[Dockerfile*]
+indent_style = space
+insert_final_newline = true
