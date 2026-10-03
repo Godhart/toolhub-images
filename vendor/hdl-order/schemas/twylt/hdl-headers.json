@@ -1,0 +1,162 @@
+{
+  "format_version": "1.8",
+  "name": "hdl-headers",
+  "version": "0.7.0",
+  "description": "List headers, their transitive users, and unresolved includes.",
+  "requirements": {
+    "tool": "pip",
+    "format": "requirements.txt",
+    "content": "hdl-order[twylt]==0.7.0\n"
+  },
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "root": {
+        "description": "HDL project directory; each immediate subdirectory is a library. Relative to process cwd.",
+        "minLength": 1,
+        "title": "Root",
+        "type": "string"
+      },
+      "config": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Optional TOML file with explicit dependencies; relative to process cwd.",
+        "title": "Config"
+      },
+      "include_dirs": {
+        "description": "Ordered additional include directories; relative to process cwd.",
+        "items": {
+          "type": "string"
+        },
+        "title": "Include Dirs",
+        "type": "array"
+      },
+      "defines": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "description": "Preprocessor definitions, for example {SIM: '1'}.",
+        "title": "Defines",
+        "type": "object"
+      },
+      "allow_missing_includes": {
+        "default": false,
+        "description": "Report unresolved includes instead of aborting.",
+        "title": "Allow Missing Includes",
+        "type": "boolean"
+      }
+    },
+    "required": [
+      "root"
+    ],
+    "title": "AnalysisInputTWYLTStrict",
+    "type": "object",
+    "$id": "HDLHeadersInput",
+    "x-schema-version": "1.0.0"
+  },
+  "outputSchema": {
+    "$defs": {
+      "HeaderTWYLTStrict": {
+        "additionalProperties": false,
+        "properties": {
+          "file": {
+            "title": "File",
+            "type": "string"
+          },
+          "used_by": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Used By",
+            "type": "array"
+          }
+        },
+        "required": [
+          "file",
+          "used_by"
+        ],
+        "title": "HeaderTWYLTStrict",
+        "type": "object"
+      },
+      "IncludeEdgeTWYLTStrict": {
+        "additionalProperties": false,
+        "properties": {
+          "dependent": {
+            "title": "Dependent",
+            "type": "string"
+          },
+          "dependency": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dependency"
+          },
+          "spelling": {
+            "title": "Spelling",
+            "type": "string"
+          },
+          "line": {
+            "title": "Line",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "dependent",
+          "dependency",
+          "spelling",
+          "line"
+        ],
+        "title": "IncludeEdgeTWYLTStrict",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "headers": {
+        "items": {
+          "$ref": "#/$defs/HeaderTWYLTStrict"
+        },
+        "title": "Headers",
+        "type": "array"
+      },
+      "unresolved": {
+        "items": {
+          "$ref": "#/$defs/IncludeEdgeTWYLTStrict"
+        },
+        "title": "Unresolved",
+        "type": "array"
+      }
+    },
+    "required": [
+      "headers",
+      "unresolved"
+    ],
+    "title": "HeadersOutputTWYLTStrict",
+    "type": "object",
+    "$id": "HDLHeadersOutput",
+    "x-schema-version": "1.0.0"
+  },
+  "few_shots": [
+    {
+      "input": {
+        "root": "examples/twylt-empty"
+      },
+      "output": {
+        "headers": [],
+        "unresolved": []
+      }
+    }
+  ]
+}

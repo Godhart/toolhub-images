@@ -1,0 +1,14 @@
+{
+  "name": "toolhub-tool-runtime",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@twylt/core": "file:/opt/twylt-typescript",
+    "@sinclair/typebox": "0.34.41",
+    "ajv": "8.17.1",
+    "ajv-formats": "3.0.1",
+    "typescript": "5.8.3",
+    "tsx": "4.20.5",
+    "@types/node": "^22.15.0"
+  }
+}

@@ -1,0 +1,1 @@
+# Add Python dependencies here, preferably pinned: requests==2.32.5

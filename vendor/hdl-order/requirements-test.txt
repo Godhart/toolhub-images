@@ -1,0 +1,3 @@
+pytest>=8,<9
+jsonschema>=4,<5
+twylt==1.0.0

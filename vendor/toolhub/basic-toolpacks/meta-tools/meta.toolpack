@@ -1,0 +1,439 @@
+{
+  "kind": "TOOLHUB_PACK",
+  "version": 1,
+  "category": {
+    "name": "Meta / Self-Management",
+    "slug": "meta",
+    "appendPrompt": "Инструменты для полного автономного управления ToolHub: категориями, инструментами и средами их выполнения (Runners).",
+    "type": "LOCAL",
+    "tools": [],
+    "children": [
+      {
+        "name": "Categories Management",
+        "slug": "categories",
+        "appendPrompt": "Управление папками (категориями) в дереве навыков ToolHub.",
+        "type": "LOCAL",
+        "tools": [
+          {
+            "name": "List Categories",
+            "slug": "list-categories",
+            "agentDescription": "Возвращает список всех категорий (папок) в ToolHub со сведениями об их типах, ID и абсолютных путях.",
+            "code": "import fs from 'fs';\n\nconst port = process.env.PORT || 3000;\nconst adminPass = process.env.ADMIN_PASSWORD || 'admin';\n\ntry {\n  const res = await fetch(`http://127.0.0.1:${port}/admin/api/categories`, {\n    headers: { 'x-admin-password': adminPass }\n  });\n  const categories = await res.json();\n  fs.writeFileSync('output.json', JSON.stringify({ success: res.ok, count: categories.length, categories }));\n} catch (e: any) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+            "packageJson": "",
+            "inputSchema": { "type": "object", "properties": {} },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "count": { "type": "number" },
+                "categories": { "type": "array", "items": { "type": "object" } }
+              },
+              "required": ["success"]
+            },
+            "examples": [],
+            "timeoutMs": 30000,
+            "runnerType": "bun_local"
+          },
+          {
+            "name": "Read Category",
+            "slug": "read-category",
+            "agentDescription": "Возвращает информацию о конкретной категории по её ID или абсолютному пути.",
+            "code": "import fs from 'fs';\n\nconst input = JSON.parse(fs.readFileSync('input.json', 'utf8') || '{}');\nconst port = process.env.PORT || 3000;\nconst adminPass = process.env.ADMIN_PASSWORD || 'admin';\nconst baseUrl = `http://127.0.0.1:${port}/admin/api`;\n\ntry {\n  const res = await fetch(`${baseUrl}/categories`, { headers: { 'x-admin-password': adminPass } });\n  const cats = await res.json();\n  let found = null;\n  if (input.categoryId) {\n    found = cats.find((c: any) => c.id === Number(input.categoryId));\n  } else if (input.categoryPath) {\n    const cleanPath = '/' + input.categoryPath.replace(/^\\/+/, '');\n    found = cats.find((c: any) => c.fullPath === cleanPath);\n  }\n  if (found) {\n    fs.writeFileSync('output.json', JSON.stringify({ success: true, category: found }));\n  } else {\n    fs.writeFileSync('output.json', JSON.stringify({ success: false, error: 'Category not found' }));\n  }\n} catch (e: any) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+            "packageJson": "",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "categoryId": { "type": "number", "description": "ID категории в базе" },
+                "categoryPath": { "type": "string", "description": "Или абсолютный путь, напр. /system/monitoring" }
+              }
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "category": { "type": "object" },
+                "error": { "type": "string" }
+              },
+              "required": ["success"]
+            },
+            "examples": [],
+            "timeoutMs": 30000,
+            "runnerType": "bun_local"
+          },
+          {
+            "name": "Create Category",
+            "slug": "create-category",
+            "agentDescription": "Создает новую папку (категорию) в дереве ToolHub (поддерживает LOCAL, MCP и REMOTE шлюзы). При создании MCP-сервера автоматически запрашивает и синхронизирует его схемы.",
+            "code": "import fs from 'fs';\n\nconst input = JSON.parse(fs.readFileSync('input.json', 'utf8') || '{}');\nconst port = process.env.PORT || 3000;\nconst adminPass = process.env.ADMIN_PASSWORD || 'admin';\nconst baseUrl = `http://127.0.0.1:${port}/admin/api`;\n\ntry {\n  let parentId = input.parentId || null;\n  if (!parentId && input.parentPath) {\n    const catRes = await fetch(`${baseUrl}/categories`, { headers: { 'x-admin-password': adminPass } });\n    const cats = await catRes.json();\n    const cleanParentPath = '/' + input.parentPath.replace(/^\\/+/, '');\n    const parent = cats.find((c: any) => c.fullPath === cleanParentPath);\n    if (parent) parentId = parent.id;\n  }\n\n  const payload = {\n    name: input.name,\n    parentId,\n    appendPrompt: input.appendPrompt || '',\n    type: input.type || 'LOCAL',\n    isActive: input.isActive !== undefined ? input.isActive : true,\n    remoteUrl: input.remoteUrl || undefined,\n    remoteToken: input.remoteToken || undefined,\n    mcpCommand: input.mcpCommand || undefined,\n    mcpArgs: input.mcpArgs || undefined,\n    mcpEnv: input.mcpEnv || {},\n    mcpIsStateful: !!input.mcpIsStateful\n  };\n\n  const res = await fetch(`${baseUrl}/categories`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },\n    body: JSON.stringify(payload)\n  });\n\n  const result = await res.json();\n\n  if (res.ok && payload.type === 'MCP' && result.id) {\n    try {\n      await fetch(`${baseUrl}/categories/${result.id}/mcp-sync`, {\n        method: 'POST',\n        headers: { 'x-admin-password': adminPass }\n      });\n      result.mcpSynced = true;\n    } catch (e) {\n      result.mcpSyncError = e.message;\n    }\n  }\n\n  fs.writeFileSync('output.json', JSON.stringify({ success: res.ok, result }));\n} catch (e) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+            "packageJson": "",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "description": "Имя новой категории" },
+                "parentPath": { "type": "string", "description": "Путь к родительской папке, напр. /system" },
+                "parentId": { "type": "number", "description": "Или ID родительской папки" },
+                "appendPrompt": { "type": "string", "description": "Контекстная инструкция для модели" },
+                "type": { "type": "string", "enum": ["LOCAL", "REMOTE", "MCP"], "default": "LOCAL" },
+                "remoteUrl": { "type": "string", "description": "URL удаленного ToolHub (напр. http://192.168.1.50:3000)" },
+                "remoteToken": { "type": "string", "description": "Пароль агента (x-agent-password) удаленного ToolHub" },
+                "mcpCommand": { "type": "string", "description": "Команда запуска MCP сервера (напр. npx или bunx)" },
+                "mcpArgs": { "type": "string", "description": "Аргументы команды MCP (напр. -y @modelcontextprotocol/server-filesystem /tmp)" },
+                "mcpEnv": { "type": "object", "description": "Переменные окружения для MCP процесса" },
+                "mcpIsStateful": { "type": "boolean", "description": "Удерживать ли процесс в горячем пуле (Stateful)" }
+              },
+              "required": ["name"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "result": { "type": "object" }
+              },
+              "required": ["success"]
+            },
+            "examples": [],
+            "timeoutMs": 30000,
+            "runnerType": "bun_local"
+          },
+          {
+            "name": "Update Category",
+            "slug": "update-category",
+            "agentDescription": "Обновляет параметры, промпты, а также MCP или REMOTE настройки существующей категории по её ID.",
+            "code": "import fs from 'fs';\n\nconst input = JSON.parse(fs.readFileSync('input.json', 'utf8') || '{}');\nconst port = process.env.PORT || 3000;\nconst adminPass = process.env.ADMIN_PASSWORD || 'admin';\nconst baseUrl = `http://127.0.0.1:${port}/admin/api`;\n\nif (!input.categoryId) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: 'categoryId is required' }));\n  process.exit(0);\n}\n\ntry {\n  const getRes = await fetch(`${baseUrl}/categories`, { headers: { 'x-admin-password': adminPass } });\n  const cats = await getRes.json();\n  const current = cats.find((c: any) => c.id === Number(input.categoryId));\n  if (!current) {\n    fs.writeFileSync('output.json', JSON.stringify({ success: false, error: 'Category not found' }));\n    process.exit(0);\n  }\n\n  const payload = {\n    ...current,\n    name: input.name || current.name,\n    appendPrompt: input.appendPrompt !== undefined ? input.appendPrompt : current.appendPrompt,\n    parentId: input.parentId !== undefined ? input.parentId : current.parentId,\n    remoteUrl: input.remoteUrl !== undefined ? input.remoteUrl : current.remoteUrl,\n    remoteToken: input.remoteToken !== undefined ? input.remoteToken : current.remoteToken,\n    mcpCommand: input.mcpCommand !== undefined ? input.mcpCommand : current.mcpCommand,\n    mcpArgs: input.mcpArgs !== undefined ? input.mcpArgs : current.mcpArgs,\n    mcpEnv: input.mcpEnv !== undefined ? input.mcpEnv : current.mcpEnv,\n    mcpIsStateful: input.mcpIsStateful !== undefined ? input.mcpIsStateful : current.mcpIsStateful\n  };\n\n  const res = await fetch(`${baseUrl}/categories/${input.categoryId}`, {\n    method: 'PUT',\n    headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },\n    body: JSON.stringify(payload)\n  });\n  const result = await res.json();\n\n  if (res.ok && current.type === 'MCP') {\n    try {\n      await fetch(`${baseUrl}/categories/${input.categoryId}/mcp-sync`, {\n        method: 'POST',\n        headers: { 'x-admin-password': adminPass }\n      });\n    } catch {}\n  }\n\n  fs.writeFileSync('output.json', JSON.stringify({ success: res.ok, result }));\n} catch (e) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+            "packageJson": "",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "categoryId": { "type": "number", "description": "ID категории" },
+                "name": { "type": "string" },
+                "appendPrompt": { "type": "string" },
+                "parentId": { "type": "number" },
+                "remoteUrl": { "type": "string" },
+                "remoteToken": { "type": "string" },
+                "mcpCommand": { "type": "string" },
+                "mcpArgs": { "type": "string" },
+                "mcpEnv": { "type": "object" },
+                "mcpIsStateful": { "type": "boolean" }
+              },
+              "required": ["categoryId"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "result": { "type": "object" }
+              },
+              "required": ["success"]
+            },
+            "examples": [],
+            "timeoutMs": 30000,
+            "runnerType": "bun_local"
+          },
+          {
+            "name": "Delete Category",
+            "slug": "delete-category",
+            "agentDescription": "Рекурсивно удаляет категорию со всем содержимым (подпапками и уникальными инструментами) по её ID.",
+            "code": "import fs from 'fs';\n\nconst input = JSON.parse(fs.readFileSync('input.json', 'utf8') || '{}');\nconst port = process.env.PORT || 3000;\nconst adminPass = process.env.ADMIN_PASSWORD || 'admin';\n\nif (!input.categoryId) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: 'categoryId is required' }));\n  process.exit(0);\n}\n\ntry {\n  const res = await fetch(`http://127.0.0.1:${port}/admin/api/categories/${input.categoryId}`, {\n    method: 'DELETE',\n    headers: { 'x-admin-password': adminPass }\n  });\n  const result = await res.json();\n  fs.writeFileSync('output.json', JSON.stringify({ success: res.ok, result }));\n} catch (e: any) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+            "packageJson": "",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "categoryId": { "type": "number", "description": "ID категории для рекурсивного удаления" }
+              },
+              "required": ["categoryId"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "result": { "type": "object" }
+              },
+              "required": ["success"]
+            },
+            "examples": [],
+            "timeoutMs": 30000,
+            "runnerType": "bun_local"
+          }
+        ]
+      },
+      {
+        "name": "Tools Management",
+        "slug": "tools",
+        "appendPrompt": "Управление кодом, схемами и версиями инструментов (Tools) в ToolHub.",
+        "type": "LOCAL",
+        "tools": [
+          {
+            "name": "Read Tool",
+            "slug": "read-tool",
+            "agentDescription": "Возвращает исходный код, схемы, runnerId и категории инструмента по его ID или пути.",
+            "code": "import fs from 'fs';\n\nconst input = JSON.parse(fs.readFileSync('input.json', 'utf8') || '{}');\nconst port = process.env.PORT || 3000;\nconst adminPass = process.env.ADMIN_PASSWORD || 'admin';\nconst baseUrl = `http://127.0.0.1:${port}/admin/api`;\n\ntry {\n  let toolData = null;\n  if (input.toolId) {\n    const res = await fetch(`${baseUrl}/tools/${input.toolId}`, { headers: { 'x-admin-password': adminPass } });\n    toolData = await res.json();\n  } else if (input.toolPath) {\n    const res = await fetch(`${baseUrl}/tools`, { headers: { 'x-admin-password': adminPass } });\n    const tools = await res.json();\n    const parts = input.toolPath.replace(/^\\/+/, '').split('/');\n    const slug = parts.pop();\n    const catPath = '/' + parts.join('/');\n    toolData = tools.find((t: any) => t.slug === slug && t.categories.some((c: any) => c.category.fullPath === catPath));\n  }\n\n  if (toolData && !toolData.error) {\n    fs.writeFileSync('output.json', JSON.stringify({ success: true, tool: toolData }));\n  } else {\n    fs.writeFileSync('output.json', JSON.stringify({ success: false, error: 'Tool not found' }));\n  }\n} catch (e: any) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+            "packageJson": "",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "toolId": { "type": "number", "description": "ID инструмента в базе" },
+                "toolPath": { "type": "string", "description": "Или полный путь к инструменту, например /sublime/read-file" }
+              }
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "tool": { "type": "object" },
+                "error": { "type": "string" }
+              },
+              "required": ["success"]
+            },
+            "examples": [],
+            "timeoutMs": 30000,
+            "runnerType": "bun_local"
+          },
+          {
+            "name": "Create Tool",
+            "slug": "create-tool",
+            "agentDescription": "Создает новый инструмент в ToolHub. Если целевой папки (categoryPath) не существует, она создастся автоматически (mkdir -p).",
+            "code": "import fs from 'fs';\n\nconst input = JSON.parse(fs.readFileSync('input.json', 'utf8') || '{}');\nconst port = process.env.PORT || 3000;\nconst adminPass = process.env.ADMIN_PASSWORD || 'admin';\nconst baseUrl = `http://127.0.0.1:${port}/admin/api`;\n\ntry {\n  let runnerId = input.runnerId;\n  if (!runnerId) {\n    const runRes = await fetch(`${baseUrl}/runners`, { headers: { 'x-admin-password': adminPass } });\n    const runners = await runRes.json();\n    const targetType = input.runnerType || 'NODE';\n    const found = runners.find((r: any) => r.type === targetType) || runners[0];\n    if (found) runnerId = found.id;\n  }\n\n  const payload = {\n    name: input.name,\n    slug: input.slug,\n    agentDescription: input.agentDescription || '',\n    code: input.code || '',\n    packageJson: input.packageJson || '',\n    inputSchema: input.inputSchema || { type: 'object', properties: {} },\n    outputSchema: input.outputSchema || { type: 'object', properties: {} },\n    categoryPath: input.categoryPath,\n    runnerId: runnerId || 1\n  };\n\n  const res = await fetch(`${baseUrl}/tools`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },\n    body: JSON.stringify(payload)\n  });\n\n  const result = await res.json();\n  fs.writeFileSync('output.json', JSON.stringify({ success: res.ok, result }));\n} catch (e: any) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+            "packageJson": "",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string" },
+                "slug": { "type": "string" },
+                "categoryPath": { "type": "string", "description": "Абсолютный путь к целевой папке, напр. /system/monitoring (создастся автоматически если её нет)" },
+                "agentDescription": { "type": "string" },
+                "code": { "type": "string" },
+                "packageJson": { "type": "string" },
+                "runnerType": { "type": "string", "default": "NODE" },
+                "inputSchema": { "type": "object" },
+                "outputSchema": { "type": "object" }
+              },
+              "required": ["name", "slug", "code", "categoryPath"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "result": { "type": "object" }
+              },
+              "required": ["success"]
+            },
+            "examples": [],
+            "timeoutMs": 30000,
+            "runnerType": "bun_local"
+          },
+          {
+            "name": "Update Tool",
+            "slug": "update-tool",
+            "agentDescription": "Обновляет код, описание, зависимости или схемы существующего инструмента по его ID.",
+            "code": "import fs from 'fs';\n\nconst input = JSON.parse(fs.readFileSync('input.json', 'utf8') || '{}');\nconst port = process.env.PORT || 3000;\nconst adminPass = process.env.ADMIN_PASSWORD || 'admin';\nconst baseUrl = `http://127.0.0.1:${port}/admin/api`;\n\nif (!input.toolId) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: 'toolId is required' }));\n  process.exit(0);\n}\n\ntry {\n  const getRes = await fetch(`${baseUrl}/tools/${input.toolId}`, { headers: { 'x-admin-password': adminPass } });\n  const current = await getRes.json();\n\n  const payload = {\n    ...current,\n    name: input.name || current.name,\n    agentDescription: input.agentDescription || current.agentDescription,\n    code: input.code !== undefined ? input.code : current.code,\n    packageJson: input.packageJson !== undefined ? input.packageJson : current.packageJson,\n    inputSchema: input.inputSchema || current.inputSchema,\n    outputSchema: input.outputSchema || current.outputSchema,\n    categoryIds: current.categories ? current.categories.map((c: any) => c.categoryId) : undefined\n  };\n\n  const res = await fetch(`${baseUrl}/tools/${input.toolId}`, {\n    method: 'PUT',\n    headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },\n    body: JSON.stringify(payload)\n  });\n\n  const result = await res.json();\n  fs.writeFileSync('output.json', JSON.stringify({ success: res.ok, result }));\n} catch (e: any) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+            "packageJson": "",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "toolId": { "type": "number", "description": "ID инструмента" },
+                "code": { "type": "string" },
+                "packageJson": { "type": "string" },
+                "agentDescription": { "type": "string" },
+                "inputSchema": { "type": "object" },
+                "outputSchema": { "type": "object" }
+              },
+              "required": ["toolId"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "result": { "type": "object" }
+              },
+              "required": ["success"]
+            },
+            "examples": [],
+            "timeoutMs": 30000,
+            "runnerType": "bun_local"
+          },
+          {
+            "name": "Delete Tool",
+            "slug": "delete-tool",
+            "agentDescription": "Удаляет инструмент из ToolHub по его абсолютному пути (например, /sublime/my-tool).",
+            "code": "import fs from 'fs';\n\nconst input = JSON.parse(fs.readFileSync('input.json', 'utf8') || '{}');\nconst port = process.env.PORT || 3000;\nconst adminPass = process.env.ADMIN_PASSWORD || 'admin';\n\nif (!input.toolPath) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: \"toolPath is required (e.g. '/sublime/my-tool')\" }));\n  process.exit(0);\n}\n\ntry {\n  const cleanPath = input.toolPath.replace(/^\\/+/, '');\n  const res = await fetch(`http://127.0.0.1:${port}/admin/api/tools/${cleanPath}`, {\n    method: 'DELETE',\n    headers: { 'x-admin-password': adminPass }\n  });\n  const result = await res.json();\n  fs.writeFileSync('output.json', JSON.stringify({ success: res.ok, result }));\n} catch (e: any) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+            "packageJson": "",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "toolPath": {
+                  "type": "string",
+                  "description": "Полный абсолютный путь к инструменту, например /sublime/my-tool"
+                }
+              },
+              "required": ["toolPath"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "result": { "type": "object" }
+              },
+              "required": ["success"]
+            },
+            "examples": [],
+            "timeoutMs": 30000,
+            "runnerType": "bun_local"
+          }
+        ]
+      },
+      {
+        "name": "Runners Management",
+        "slug": "runners",
+        "appendPrompt": "Управление средами выполнения (Runners) для скриптов в ToolHub.",
+        "type": "LOCAL",
+        "tools": [
+          {
+            "name": "List Runners",
+            "slug": "list-runners",
+            "agentDescription": "Возвращает список всех доступных сред выполнения (раннеров) в ToolHub с их ID и конфигурациями.",
+            "code": "import fs from 'fs';\n\nconst port = process.env.PORT || 3000;\nconst adminPass = process.env.ADMIN_PASSWORD || 'admin';\n\ntry {\n  const res = await fetch(`http://127.0.0.1:${port}/admin/api/runners`, {\n    headers: { 'x-admin-password': adminPass }\n  });\n  const runners = await res.json();\n  fs.writeFileSync('output.json', JSON.stringify({ success: res.ok, count: runners.length, runners }));\n} catch (e: any) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+            "packageJson": "",
+            "inputSchema": { "type": "object", "properties": {} },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "count": { "type": "number" },
+                "runners": { "type": "array", "items": { "type": "object" } }
+              },
+              "required": ["success"]
+            },
+            "examples": [],
+            "timeoutMs": 30000,
+            "runnerType": "bun_local"
+          },
+          {
+            "name": "Read Runner",
+            "slug": "read-runner",
+            "agentDescription": "Возвращает точные данные о конкретной среде выполнения (раннере) по его ID.",
+            "code": "import fs from 'fs';\n\nconst input = JSON.parse(fs.readFileSync('input.json', 'utf8') || '{}');\nconst port = process.env.PORT || 3000;\nconst adminPass = process.env.ADMIN_PASSWORD || 'admin';\n\nif (!input.runnerId) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: 'runnerId is required' }));\n  process.exit(0);\n}\n\ntry {\n  const res = await fetch(`http://127.0.0.1:${port}/admin/api/runners/${input.runnerId}`, {\n    headers: { 'x-admin-password': adminPass }\n  });\n  const runner = await res.json();\n  if (res.ok) {\n    fs.writeFileSync('output.json', JSON.stringify({ success: true, runner }));\n  } else {\n    fs.writeFileSync('output.json', JSON.stringify({ success: false, error: runner.error || 'Runner not found' }));\n  }\n} catch (e: any) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+            "packageJson": "",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "runnerId": { "type": "number", "description": "ID раннера" }
+              },
+              "required": ["runnerId"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "runner": { "type": "object" },
+                "error": { "type": "string" }
+              },
+              "required": ["success"]
+            },
+            "examples": [],
+            "timeoutMs": 30000,
+            "runnerType": "bun_local"
+          },
+          {
+            "name": "Create Runner",
+            "slug": "create-runner",
+            "agentDescription": "Создает новую среду выполнения (раннер) в ToolHub.",
+            "code": "import fs from 'fs';\n\nconst input = JSON.parse(fs.readFileSync('input.json', 'utf8') || '{}');\nconst port = process.env.PORT || 3000;\nconst adminPass = process.env.ADMIN_PASSWORD || 'admin';\n\ntry {\n  const res = await fetch(`http://127.0.0.1:${port}/admin/api/runners`, {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },\n    body: JSON.stringify({\n      name: input.name,\n      type: input.type,\n      description: input.description || '',\n      config: input.config || {}\n    })\n  });\n  const result = await res.json();\n  fs.writeFileSync('output.json', JSON.stringify({ success: res.ok, result }));\n} catch (e: any) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+            "packageJson": "",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "description": "Понятное имя раннера" },
+                "type": { "type": "string", "description": "Уникальный идентификатор типа, напр. python_custom" },
+                "description": { "type": "string" },
+                "config": {
+                  "type": "object",
+                  "properties": {
+                    "runCmd": { "type": "string" },
+                    "codeFileName": { "type": "string" },
+                    "installCmd": { "type": "string" },
+                    "depFileName": { "type": "string" }
+                  },
+                  "required": ["runCmd", "codeFileName"]
+                }
+              },
+              "required": ["name", "type", "config"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "result": { "type": "object" }
+              },
+              "required": ["success"]
+            },
+            "examples": [],
+            "timeoutMs": 30000,
+            "runnerType": "bun_local"
+          },
+          {
+            "name": "Update Runner",
+            "slug": "update-runner",
+            "agentDescription": "Обновляет имя, тип или конфигурацию команды запуска существующего раннера по его ID.",
+            "code": "import fs from 'fs';\n\nconst input = JSON.parse(fs.readFileSync('input.json', 'utf8') || '{}');\nconst port = process.env.PORT || 3000;\nconst adminPass = process.env.ADMIN_PASSWORD || 'admin';\nconst baseUrl = `http://127.0.0.1:${port}/admin/api`;\n\nif (!input.runnerId) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: 'runnerId is required' }));\n  process.exit(0);\n}\n\ntry {\n  const getRes = await fetch(`${baseUrl}/runners/${input.runnerId}`, { headers: { 'x-admin-password': adminPass } });\n  const current = await getRes.json();\n\n  const payload = {\n    ...current,\n    name: input.name || current.name,\n    type: input.type || current.type,\n    description: input.description !== undefined ? input.description : current.description,\n    config: input.config || current.config\n  };\n\n  const res = await fetch(`${baseUrl}/runners/${input.runnerId}`, {\n    method: 'PUT',\n    headers: { 'Content-Type': 'application/json', 'x-admin-password': adminPass },\n    body: JSON.stringify(payload)\n  });\n  const result = await res.json();\n  fs.writeFileSync('output.json', JSON.stringify({ success: res.ok, result }));\n} catch (e: any) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+            "packageJson": "",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "runnerId": { "type": "number", "description": "ID раннера" },
+                "name": { "type": "string" },
+                "type": { "type": "string" },
+                "description": { "type": "string" },
+                "config": {
+                  "type": "object",
+                  "properties": {
+                    "runCmd": { "type": "string" },
+                    "codeFileName": { "type": "string" },
+                    "installCmd": { "type": "string" },
+                    "depFileName": { "type": "string" }
+                  }
+                }
+              },
+              "required": ["runnerId"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "result": { "type": "object" }
+              },
+              "required": ["success"]
+            },
+            "examples": [],
+            "timeoutMs": 30000,
+            "runnerType": "bun_local"
+          },
+          {
+            "name": "Delete Runner",
+            "slug": "delete-runner",
+            "agentDescription": "Удаляет среду выполнения (раннер) из ToolHub по его ID.",
+            "code": "import fs from 'fs';\n\nconst input = JSON.parse(fs.readFileSync('input.json', 'utf8') || '{}');\nconst port = process.env.PORT || 3000;\nconst adminPass = process.env.ADMIN_PASSWORD || 'admin';\n\nif (!input.runnerId) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: 'runnerId is required' }));\n  process.exit(0);\n}\n\ntry {\n  const res = await fetch(`http://127.0.0.1:${port}/admin/api/runners/${input.runnerId}`, {\n    method: 'DELETE',\n    headers: { 'x-admin-password': adminPass }\n  });\n  const result = await res.json();\n  fs.writeFileSync('output.json', JSON.stringify({ success: res.ok, result }));\n} catch (e: any) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+            "packageJson": "",
+            "inputSchema": {
+              "type": "object",
+              "properties": {
+                "runnerId": { "type": "number", "description": "ID раннера для удаления" }
+              },
+              "required": ["runnerId"]
+            },
+            "outputSchema": {
+              "type": "object",
+              "properties": {
+                "success": { "type": "boolean" },
+                "result": { "type": "object" }
+              },
+              "required": ["success"]
+            },
+            "examples": [],
+            "timeoutMs": 30000,
+            "runnerType": "bun_local"
+          }
+        ]
+      }
+    ]
+  }
+}

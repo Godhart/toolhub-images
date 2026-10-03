@@ -1,0 +1,11 @@
+mkdocs>=1.6,<2
+mkdocs-material>=9,<10
+sphinx>=8,<9
+myst-parser>=4,<5
+python-docx>=1,<2
+openpyxl>=3,<4
+python-pptx>=1,<2
+pypdf>=5,<7
+reportlab>=4,<5
+Pillow>=11,<13
+Jinja2>=3,<4

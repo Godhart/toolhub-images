@@ -1,0 +1,28 @@
+{
+  "name": "toolhub",
+  "private": true,
+  "version": "1.0.0",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:api": "bun run --watch apps/api/src/index.ts",
+    "dev:admin": "bun run --cwd apps/admin dev",
+    "dev": "concurrently \"bun run dev:api\" \"bun run dev:admin\"",
+    "build:admin": "bun run --cwd apps/admin build",
+    "build": "bun run build:admin && bun run db:push",
+    "start": "NODE_ENV=production bun run apps/api/src/index.ts",
+    "db:generate": "bunx prisma generate",
+    "db:push": "bunx prisma db push",
+    "db:studio": "bunx prisma studio",
+    "db:seed": "bun run prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.12.0",
+    "ollama": "^0.6.3"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "prisma": "^5.12.0"
+  }
+}

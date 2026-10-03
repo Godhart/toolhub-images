@@ -1,0 +1,214 @@
+{
+  "format_version": "1.8",
+  "name": "hdl-graph",
+  "version": "0.7.0",
+  "description": "Get the partial syntactic HDL design-unit graph using dependent/dependency roles.",
+  "requirements": {
+    "tool": "pip",
+    "format": "requirements.txt",
+    "content": "hdl-order[twylt]==0.7.0\n"
+  },
+  "inputSchema": {
+    "additionalProperties": false,
+    "properties": {
+      "root": {
+        "description": "HDL project directory; each immediate subdirectory is a library. Relative to process cwd.",
+        "minLength": 1,
+        "title": "Root",
+        "type": "string"
+      },
+      "config": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Optional TOML file with explicit dependencies; relative to process cwd.",
+        "title": "Config"
+      },
+      "include_dirs": {
+        "description": "Ordered additional include directories; relative to process cwd.",
+        "items": {
+          "type": "string"
+        },
+        "title": "Include Dirs",
+        "type": "array"
+      },
+      "defines": {
+        "additionalProperties": {
+          "type": "string"
+        },
+        "description": "Preprocessor definitions, for example {SIM: '1'}.",
+        "title": "Defines",
+        "type": "object"
+      },
+      "allow_missing_includes": {
+        "default": false,
+        "description": "Report unresolved includes instead of aborting.",
+        "title": "Allow Missing Includes",
+        "type": "boolean"
+      },
+      "render": {
+        "anyOf": [
+          {
+            "enum": [
+              "text",
+              "dot"
+            ],
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "description": "Optional additional graph rendering.",
+        "title": "Render"
+      }
+    },
+    "required": [
+      "root"
+    ],
+    "title": "GraphInputTWYLTStrict",
+    "type": "object",
+    "$id": "HDLGraphInput",
+    "x-schema-version": "1.0.0"
+  },
+  "outputSchema": {
+    "$defs": {
+      "UnitEdgeTWYLTStrict": {
+        "additionalProperties": false,
+        "properties": {
+          "dependent": {
+            "title": "Dependent",
+            "type": "string"
+          },
+          "dependency": {
+            "title": "Dependency",
+            "type": "string"
+          },
+          "relation": {
+            "title": "Relation",
+            "type": "string"
+          },
+          "file": {
+            "title": "File",
+            "type": "string"
+          },
+          "line": {
+            "title": "Line",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "dependent",
+          "dependency",
+          "relation",
+          "file",
+          "line"
+        ],
+        "title": "UnitEdgeTWYLTStrict",
+        "type": "object"
+      },
+      "UnitTWYLTStrict": {
+        "additionalProperties": false,
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "library": {
+            "title": "Library",
+            "type": "string"
+          },
+          "kind": {
+            "title": "Kind",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "file": {
+            "title": "File",
+            "type": "string"
+          },
+          "line": {
+            "title": "Line",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "library",
+          "kind",
+          "name",
+          "file",
+          "line"
+        ],
+        "title": "UnitTWYLTStrict",
+        "type": "object"
+      }
+    },
+    "additionalProperties": false,
+    "properties": {
+      "nodes": {
+        "items": {
+          "$ref": "#/$defs/UnitTWYLTStrict"
+        },
+        "title": "Nodes",
+        "type": "array"
+      },
+      "edges": {
+        "items": {
+          "$ref": "#/$defs/UnitEdgeTWYLTStrict"
+        },
+        "title": "Edges",
+        "type": "array"
+      },
+      "completeness": {
+        "const": "partial",
+        "default": "partial",
+        "title": "Completeness",
+        "type": "string"
+      },
+      "rendered": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "title": "Rendered"
+      }
+    },
+    "required": [
+      "nodes",
+      "edges"
+    ],
+    "title": "GraphOutputTWYLTStrict",
+    "type": "object",
+    "$id": "HDLGraphOutput",
+    "x-schema-version": "1.0.0"
+  },
+  "few_shots": [
+    {
+      "input": {
+        "root": "examples/twylt-empty"
+      },
+      "output": {
+        "nodes": [],
+        "edges": [],
+        "completeness": "partial",
+        "rendered": null
+      }
+    }
+  ]
+}

@@ -1,0 +1,193 @@
+{
+  "kind": "TOOLHUB_PACK",
+  "version": 1,
+  "category": {
+    "name": "Sublime Text",
+    "slug": "sublime",
+    "appendPrompt": "Инструменты управления Sublime Text. Для чтения и правки файлов используй прямые вызовы с указанием filePath.",
+    "type": "LOCAL",
+    "remoteUrl": "",
+    "remoteToken": "",
+    "mcpCommand": "bunx",
+    "mcpArgs": "",
+    "mcpEnv": {},
+    "mcpIsStateful": false,
+    "tools": [
+      {
+        "name": "List Project Files",
+        "slug": "list-project-files",
+        "agentDescription": "Возвращает список открытых корневых папок и относительные пути ко всем файлам проекта в Sublime Text.",
+        "code": "import fs from 'fs';\n\ntry {\n  const res = await fetch('http://127.0.0.1:9999/project-files');\n  const data = await res.json();\n  if (!res.ok) {\n    fs.writeFileSync('output.json', JSON.stringify({ success: false, error: data.error || 'Failed to list files' }));\n  } else {\n    fs.writeFileSync('output.json', JSON.stringify({ success: true, data }));\n  }\n} catch (e: any) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+        "packageJson": "",
+        "inputSchema": {
+          "type": "object",
+          "properties": {}
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "success": { "type": "boolean" },
+            "data": {
+              "type": "object",
+              "properties": {
+                "folders": { "type": "array", "items": { "type": "string" } },
+                "files": { "type": "array", "items": { "type": "string" } },
+                "totalCount": { "type": "number" }
+              }
+            },
+            "error": { "type": "string" }
+          },
+          "required": ["success"]
+        },
+        "examples": [
+          {
+            "input": {},
+            "output": {
+              "success": true,
+              "data": {
+                "folders": ["/home/user/projects/my-api"],
+                "files": ["src/index.ts", "package.json"],
+                "totalCount": 2
+              }
+            }
+          }
+        ],
+        "timeoutMs": 30000,
+        "isMcpProxy": false,
+        "runnerType": "bun_local"
+      },
+      {
+        "name": "Read File",
+        "slug": "read-file",
+        "agentDescription": "Считывает содержимое любого файла по относительному или абсолютному пути. Если filePath не указан — считывает активную вкладку.",
+        "code": "import fs from 'fs';\n\ntry {\n  const input = JSON.parse(fs.readFileSync('input.json', 'utf8') || '{}');\n  const query = input.filePath ? `?path=${encodeURIComponent(input.filePath)}` : '';\n  const res = await fetch(`http://127.0.0.1:9999/read-file${query}`);\n  const data = await res.json();\n  if (!res.ok) {\n    fs.writeFileSync('output.json', JSON.stringify({ success: false, error: data.error || 'Failed to read file' }));\n  } else {\n    fs.writeFileSync('output.json', JSON.stringify({ success: true, data }));\n  }\n} catch (e: any) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+        "packageJson": "",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "filePath": {
+              "type": "string",
+              "description": "Путь к файлу. Если опущен — считывается активная вкладка."
+            }
+          }
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "success": { "type": "boolean" },
+            "data": {
+              "type": "object",
+              "properties": {
+                "filePath": { "type": "string" },
+                "selection": { "type": "string" },
+                "fullContent": { "type": "string" },
+                "isOpenedInEditor": { "type": "boolean" }
+              }
+            },
+            "error": { "type": "string" }
+          },
+          "required": ["success"]
+        },
+        "examples": [
+          {
+            "input": { "filePath": "src/index.ts" },
+            "output": {
+              "success": true,
+              "data": {
+                "filePath": "/home/user/projects/my-api/src/index.ts",
+                "selection": "",
+                "fullContent": "console.log('hello');",
+                "isOpenedInEditor": true
+              }
+            }
+          }
+        ],
+        "timeoutMs": 30000,
+        "isMcpProxy": false,
+        "runnerType": "bun_local"
+      },
+      {
+        "name": "Replace Literal",
+        "slug": "replace-literal",
+        "agentDescription": "Находит подстроку (find) и замещает на (replace). Автоматически открывает файл во вкладке, если он закрыт.",
+        "code": "import fs from 'fs';\n\ntry {\n  const input = JSON.parse(fs.readFileSync('input.json', 'utf8') || '{}');\n  const res = await fetch('http://127.0.0.1:9999/search-replace', {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({\n      filePath: input.filePath,\n      find: input.find,\n      replace: input.replace,\n      replaceAll: input.replaceAll !== undefined ? input.replaceAll : true\n    })\n  });\n  const data = await res.json();\n  if (!res.ok) {\n    fs.writeFileSync('output.json', JSON.stringify({ success: false, error: data.error || 'Replace failed' }));\n  } else {\n    fs.writeFileSync('output.json', JSON.stringify({ success: true, data }));\n  }\n} catch (e: any) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+        "packageJson": "",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "filePath": { "type": "string", "description": "Путь к файлу" },
+            "find": { "type": "string", "description": "Точный фрагмент кода для поиска" },
+            "replace": { "type": "string", "description": "Новый код" },
+            "replaceAll": { "type": "boolean", "default": true }
+          },
+          "required": ["find", "replace"]
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "success": { "type": "boolean" },
+            "data": {
+              "type": "object",
+              "properties": {
+                "message": { "type": "string" },
+                "filePath": { "type": "string" }
+              }
+            },
+            "error": { "type": "string" }
+          },
+          "required": ["success"]
+        },
+        "examples": [
+          {
+            "input": { "filePath": "src/index.ts", "find": "const a = 1;", "replace": "const a = 2;" },
+            "output": { "success": true, "data": { "message": "Search & replace complete!", "filePath": "/path/src/index.ts" } }
+          }
+        ],
+        "timeoutMs": 30000,
+        "isMcpProxy": false,
+        "runnerType": "bun_local"
+      },
+      {
+        "name": "Patch Full Code",
+        "slug": "patch-full-code",
+        "agentDescription": "Перезаписывает весь файл новым содержимым. Автоматически открывает файл во вкладке.",
+        "code": "import fs from 'fs';\n\ntry {\n  const input = JSON.parse(fs.readFileSync('input.json', 'utf8') || '{}');\n  const res = await fetch('http://127.0.0.1:9999/apply-patch', {\n    method: 'POST',\n    headers: { 'Content-Type': 'application/json' },\n    body: JSON.stringify({\n      filePath: input.filePath,\n      text: input.text,\n      mode: input.mode || 'replace_full'\n    })\n  });\n  const data = await res.json();\n  if (!res.ok) {\n    fs.writeFileSync('output.json', JSON.stringify({ success: false, error: data.error || 'Patch failed' }));\n  } else {\n    fs.writeFileSync('output.json', JSON.stringify({ success: true, data }));\n  }\n} catch (e: any) {\n  fs.writeFileSync('output.json', JSON.stringify({ success: false, error: e.message }));\n}",
+        "packageJson": "",
+        "inputSchema": {
+          "type": "object",
+          "properties": {
+            "filePath": { "type": "string", "description": "Путь к файлу" },
+            "text": { "type": "string", "description": "Полное содержимое файла" },
+            "mode": { "type": "string", "enum": ["replace_full", "replace_selection"] }
+          },
+          "required": ["text"]
+        },
+        "outputSchema": {
+          "type": "object",
+          "properties": {
+            "success": { "type": "boolean" },
+            "data": {
+              "type": "object",
+              "properties": {
+                "message": { "type": "string" },
+                "filePath": { "type": "string" }
+              }
+            },
+            "error": { "type": "string" }
+          },
+          "required": ["success"]
+        },
+        "examples": [
+          {
+            "input": { "filePath": "src/index.ts", "text": "console.log('patched');" },
+            "output": { "success": true, "data": { "message": "Patch applied successfully!", "filePath": "/path/src/index.ts" } }
+          }
+        ],
+        "timeoutMs": 30000,
+        "isMcpProxy": false,
+        "runnerType": "bun_local"
+      }
+    ],
+    "children": []
+  }
+}
