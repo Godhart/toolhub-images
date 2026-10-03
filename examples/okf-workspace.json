@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "repositories": {
+    "docs": {
+      "path": "docs",
+      "ref": "HEAD"
+    }
+  },
+  "domains": [
+    {
+      "id": "docs",
+      "title": "Project documentation",
+      "description": "Documentation for the project"
+    }
+  ],
+  "coverage": [
+    {
+      "repository": "docs",
+      "prefix": "",
+      "domain": "docs"
+    }
+  ],
+  "nodes": []
+}

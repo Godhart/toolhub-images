@@ -1,0 +1,9 @@
+services:
+  toolhub:
+    build:
+      target: okf
+    image: toolhub-twylt:okf
+    environment:
+      OKF_WORKSPACE_STATE: /okf-state
+    volumes:
+      - ./okf-state:/okf-state

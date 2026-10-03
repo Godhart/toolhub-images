@@ -1,0 +1,13 @@
+import path from 'node:path';
+import {setup} from './setup.js';
+import {CatalogWorkspace} from '../src/catalog.js';
+const root=path.resolve(process.argv[2]??'demo-workspace');
+const initial=await setup(root),w=new CatalogWorkspace(initial.w.root);
+console.log('MIGRATION',await w.migrate({base_snapshot:await w.current(),idempotency_key:'migrate-v2'}));
+await w.apply('migrate-v2');
+const s=await w.snapshot();
+const manifest={format:'dependency-manifest',version:'1.0',producer:{name:'demo',version:'1',analyzer:'explicit'},scope:{project:'tools',profile:'default',area:'runtime',configuration:{}},sources:[{id:'runtime'}],nodes:[{id:'reader',kind:'file',source:'runtime',path:'src/input.py',content_hash:s.data.hashes['input-reader']},{id:'client',kind:'file',source:'runtime',path:'src/client.py',content_hash:s.data.hashes.client}],edges:[{dependent:'client',dependency:'reader',relation:'uses'}],coverage:{status:'complete',files:['reader','client'],relation_types:['uses'],limitations:[]},diagnostics:[]};
+console.log('IMPORT',await w.importDependencies({base_snapshot:s.id,idempotency_key:'import',manifest,mapping:{runtime:{repository:'runtime',prefix:''}}}));
+await w.apply('import');
+console.log('PLAN',JSON.stringify(await w.documentationPlan(),null,2));
+console.log('EXPORT',await w.exportSnapshot(path.join(root,'export')));

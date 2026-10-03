@@ -1,0 +1,316 @@
+{
+  "type": "object",
+  "properties": {
+    "format": {
+      "type": "string",
+      "const": "dependency-manifest"
+    },
+    "version": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "producer": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "analyzer": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": [
+        "name",
+        "version",
+        "analyzer"
+      ],
+      "additionalProperties": false
+    },
+    "scope": {
+      "type": "object",
+      "properties": {
+        "project": {
+          "type": "string",
+          "minLength": 1
+        },
+        "profile": {
+          "type": "string",
+          "minLength": 1
+        },
+        "area": {
+          "type": "string",
+          "minLength": 1
+        },
+        "configuration": {
+          "type": "object",
+          "additionalProperties": {},
+          "default": {}
+        }
+      },
+      "required": [
+        "project",
+        "profile",
+        "area"
+      ],
+      "additionalProperties": false
+    },
+    "sources": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-zA-Z0-9][a-zA-Z0-9_.-]{0,95}$"
+          },
+          "revision": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "nodes": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              "kind": {
+                "type": "string",
+                "const": "file"
+              },
+              "source": {
+                "$ref": "#/properties/sources/items/properties/id"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1
+              },
+              "content_hash": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "source",
+              "path",
+              "content_hash"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/properties/nodes/items/anyOf/0/properties/id"
+              },
+              "kind": {
+                "type": "string",
+                "const": "symbol"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "file": {
+                "$ref": "#/properties/nodes/items/anyOf/0/properties/id"
+              },
+              "attributes": {
+                "type": "object",
+                "additionalProperties": {},
+                "default": {}
+              },
+              "line": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "name",
+              "file"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "id": {
+                "$ref": "#/properties/nodes/items/anyOf/0/properties/id"
+              },
+              "kind": {
+                "type": "string",
+                "const": "external"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "uri": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "name"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "dependent": {
+            "$ref": "#/properties/nodes/items/anyOf/0/properties/id"
+          },
+          "dependency": {
+            "$ref": "#/properties/nodes/items/anyOf/0/properties/id"
+          },
+          "relation": {
+            "type": "string",
+            "minLength": 1
+          },
+          "evidence": {
+            "type": "object",
+            "properties": {
+              "file": {
+                "$ref": "#/properties/nodes/items/anyOf/0/properties/id"
+              },
+              "line": {
+                "type": "integer",
+                "exclusiveMinimum": 0
+              },
+              "precision": {
+                "type": "string",
+                "enum": [
+                  "file",
+                  "symbol",
+                  "line"
+                ]
+              }
+            },
+            "required": [
+              "file",
+              "precision"
+            ],
+            "additionalProperties": false
+          },
+          "note": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "dependent",
+          "dependency",
+          "relation"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": [
+            "complete",
+            "partial"
+          ]
+        },
+        "files": {
+          "type": "array",
+          "items": {
+            "$ref": "#/properties/nodes/items/anyOf/0/properties/id"
+          }
+        },
+        "relation_types": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "status",
+        "files",
+        "relation_types",
+        "limitations"
+      ],
+      "additionalProperties": false
+    },
+    "diagnostics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "severity": {
+            "type": "string",
+            "enum": [
+              "info",
+              "warning",
+              "error"
+            ]
+          },
+          "code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "severity",
+          "code",
+          "message"
+        ],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": [
+    "format",
+    "version",
+    "producer",
+    "scope",
+    "sources",
+    "nodes",
+    "edges",
+    "coverage",
+    "diagnostics"
+  ],
+  "additionalProperties": false,
+  "$schema": "http://json-schema.org/draft-07/schema#"
+}

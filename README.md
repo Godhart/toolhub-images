@@ -1,7 +1,9 @@
-# ToolHub TWYLT Container Images 0.1.0
+# ToolHub TWYLT Container Images 0.2.0
 
 Образы Docker/Podman для ToolHub и запуска TWYLT-тулов с хоста.
-Один Dockerfile содержит четыре именованных target; отдельные Dockerfile не нужны.
+Один Dockerfile содержит пять именованных target; отдельные Dockerfile не нужны.
+
+Отдельный образ OKF, его инициализация и работа с тулом описаны в [README-OKF.md](README-OKF.md).
 
 ## Варианты
 
@@ -10,6 +12,7 @@
 | `base` (по умолчанию) | ToolHub + Bun 1.4.2, Node.js 22, Python 3.11, TWYLT Python 1.0.0, локальный `@twylt/core` 0.1.0, TypeBox, Ajv, tsx, TypeScript и все зависимости filesystem-twylt-pack 0.1.0 |
 | `git` | base + Git, SSH-клиент, HTTPS-сертификаты |
 | `docs` | git + MkDocs/Material, Sphinx/MyST, Pandoc, Graphviz, Doxygen, TypeDoc, markdownlint-cli2, python-docx, openpyxl, python-pptx, pypdf, ReportLab, Pillow; XeLaTeX и кириллица |
+| `okf` | docs + OKF Workspace 0.2.0 и @copperbox/okf-mcp 2.1.0; TWYLT-адаптер в tools/ для подключения через volume |
 | `hdl` | git + hdl-order 0.7.0 с extra `twylt`, VUnit HDL 4.7.1, Graphviz |
 
 `docs` предназначен для Markdown/RST/API-документации, сайтов и PDF через XeLaTeX,
@@ -29,6 +32,7 @@ docker build --target base -t toolhub-twylt:base .
 docker build --target git  -t toolhub-twylt:git .
 docker build --target docs -t toolhub-twylt:docs .
 docker build --target hdl  -t toolhub-twylt:hdl .
+docker build --target okf  -t toolhub-twylt:okf .
 ```
 
 Для Podman замените `docker` на `podman`. BuildKit-специфичных инструкций нет.
@@ -218,7 +222,7 @@ sh tests/smoke-images.sh docker
 # либо sh tests/smoke-images.sh podman
 ```
 
-Скрипт проверяет уже собранные четыре тега, Python/TS imports, Git, документационные
+Скрипт проверяет уже собранные пять тегов, Python/TS imports, Git, документационные
 CLI, hdl-order и старт сервера с read-only rootfs, без сети, с временной базой.
 Результаты проверок, выполненных при подготовке, и ограничения — в TESTING.md.
 Решения — ADR.md; происхождение исходников и изменения — SOURCES.md.

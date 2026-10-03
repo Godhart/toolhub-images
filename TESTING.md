@@ -17,3 +17,18 @@ Docker/Podman в среде подготовки не установлены: п
 Documentation target и полный container smoke test требуют проверки у пользователя.
 Для этого приложен tests/smoke-images.sh (требует четыре заранее собранных тега).
 На SELinux адаптируйте bind mounts скрипта, добавив :Z.
+
+## Проверки 0.2.0 — OKF
+
+- npm ci и TypeScript build OKF прошли на Node 22.23.3.
+- OKF workspace.test.ts: 28 passed. Проверка дочернего CLI с открытым stdin
+  сначала не прошла в ограниченной среде; повторный запуск вне этих ограничений
+  прошёл без изменения кода.
+- OKF catalog.test.ts: 17 passed, 1 skipped (отдельный end-to-end hdl-order).
+- Новый tests/test_okf_adapter.py: 3 passed — discovery/валидация, создание и
+  обновление через prepare/apply с проверкой хеша и экспортом, открытый stdin.
+- Адаптер проверен с реальными Node CLI, Python TWYLT, Git и временным state.
+- Синтаксис обновлённого smoke-images.sh проверен.
+- Полная сборка target okf и container smoke не выполнялись: Docker/Podman
+  в среде отсутствуют. Результаты предыдущей версии выше не означают повторный
+  запуск всех базовых проверок в 0.2.0.

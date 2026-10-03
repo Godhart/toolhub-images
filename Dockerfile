@@ -1,5 +1,5 @@
 # Docker / Podman; build context = this directory.
-# Four targets: base (default), git, docs, hdl.
+# Five targets: base (default), git, docs, hdl, okf.
 ARG NODE_IMAGE=node:22-bookworm-slim
 ARG BUN_IMAGE=oven/bun:1.4.2
 FROM ${BUN_IMAGE} AS bun-binary
@@ -84,6 +84,19 @@ RUN apt-get update && apt-get install -y --no-install-recommends graphviz \
  && pip install --no-cache-dir '/opt/hdl-order-source[twylt]' \
  && pip check && hdl-order --help \
  && rm -rf /opt/hdl-order-source
+USER 1000:1000
+
+# ---- Extended: OKF documentation workspace (includes docs + Git) ----
+FROM docs AS okf
+USER root
+COPY vendor/okf-workspace /opt/okf-workspace
+RUN cd /opt/okf-workspace && npm ci --include=dev && npm run build \
+ && npm prune --omit=dev \
+ && chmod 755 dist/cli.js \
+ && ln -s /opt/okf-workspace/dist/cli.js /usr/local/bin/okf-workspace \
+ && okf-workspace --version \
+ && mkdir -p /okf-state && chown 1000:1000 /okf-state
+ENV OKF_WORKSPACE_STATE=/okf-state
 USER 1000:1000
 
 # Default build stays the small base variant.
