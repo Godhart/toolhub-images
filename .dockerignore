@@ -6,12 +6,10 @@
 **/*.db
 **/.env
 .env
-data
-workspace
+namespaces
 tools
 **/*.egg-info
 **/.pytest_cache
 **/*.tsbuildinfo
 **/build
 .sources
-vendor
