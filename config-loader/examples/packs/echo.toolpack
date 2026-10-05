@@ -1,0 +1,35 @@
+{
+  "kind": "TOOLHUB_PACK",
+  "version": 1,
+  "category": {
+    "name": "Diagnostics",
+    "slug": "diagnostics",
+    "type": "LOCAL",
+    "tools": [
+      {
+        "name": "Echo",
+        "slug": "echo",
+        "agentDescription": "Return the input JSON unchanged.",
+        "runnerName": "Python",
+        "code": "import json\nfrom pathlib import Path\nvalue = json.loads(Path(\"input.json\").read_text())\nPath(\"output.json\").write_text(json.dumps(value))\n",
+        "inputSchema": {
+          "type": "object"
+        },
+        "outputSchema": {
+          "type": "object"
+        },
+        "examples": [
+          {
+            "input": {
+              "message": "hello"
+            },
+            "output": {
+              "message": "hello"
+            }
+          }
+        ]
+      }
+    ],
+    "children": []
+  }
+}

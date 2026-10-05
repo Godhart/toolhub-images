@@ -52,3 +52,10 @@ scripts/configure-toolhub.py на стадии сборки переводит S
 При распространении образов сохраняются лицензии включённых компонентов
 (в том числе AGPL ToolHub); источники доступны по указанным точным ревизиям,
 контейнерные изменения — в этом репозитории.
+
+## Namespace integration (0.4.0)
+
+- [toolpack-builder](https://github.com/Godhart/toolpack-builder): discovery/build Python TWYLT, SHA в namespaces/requirements.txt и sources.lock.json.
+- [toolhub-mcp-bridge](https://github.com/Godhart/toolhub-mcp-bridge): самостоятельный image target, SHA в sources.lock.json.
+- `config-loader/` — интеграционный модуль из ранее подготовленного toolhub-config-loader 0.1.0; опубликованный upstream URL не был предоставлен. Он включён локально, вместе с тестами и минимальным REMOTE patch, без копии ToolHub. После публикации модуля его можно заменить закреплённой GitHub dependency.
+- Toolsets берутся из URL/ref namespace YAML и подключаются volume; сторонние репозитории не включены в этот проект.

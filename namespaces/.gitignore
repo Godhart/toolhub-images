@@ -1,7 +1,4 @@
-**/*
-!.gitignore
-!compose.template.yaml
-!env.template
-!build_namespace.py
-!toolhub-namespace-example.yaml
-!compose.docsanity.yaml
+# Runtime namespaces are generated directories, never source-controlled.
+example/
+__pycache__/
+*.pyc

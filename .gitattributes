@@ -1,1 +1,2 @@
-* -text
+# Patch context preserves the upstream file's whitespace verbatim.
+config-loader/patches/*.patch -whitespace

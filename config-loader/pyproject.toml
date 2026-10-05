@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "toolhub-config-loader"
+version = "0.1.0"
+description = "Transactional startup configuration for ToolHub"
+requires-python = ">=3.10"
+dependencies = ["PyYAML>=6.0.2,<7", "jsonschema>=4.23,<5"]
+license = {text = "MIT"}
+
+[project.scripts]
+toolhub-config = "toolhub_config.cli:main"
+
+[tool.setuptools.package-data]
+toolhub_config = ["*.json"]
+[tool.setuptools.packages.find]
+include = ["toolhub_config*"]

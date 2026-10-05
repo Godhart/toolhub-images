@@ -1,3 +1,13 @@
+# 0.4.0
+
+- Namespace YAML → toolsets, toolpacks, worker/router configs, env и Compose.
+- Встроен toolhub-config-loader 0.1.0 и исправление идентичности REMOTE ToolHub.
+- Python Docker SDK в base; target docker и настройка socket/workspace.
+- Отдельный GitHub-based MCP bridge, управляемый генератором namespace.
+- build.sh собирает образы отдельно; Compose не содержит build.
+- Валидация, staging/rollback, блокировка генерации, сохранение баз, тесты.
+- Worker MCP и интеграция docsanity отложены.
+
 # 0.3.0
 
 - Удалён vendor/; проекты загружаются из GitHub по sources.lock.json.

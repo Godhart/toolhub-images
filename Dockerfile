@@ -1,7 +1,8 @@
 # Docker / Podman; build context = this directory.
-# Targets: base (default), git, docs, hdl, docsanity; okf is a compatibility alias.
+# Targets: base (default), docker, git, docs, hdl, docsanity, mcp-bridge; alias okf.
 ARG NODE_IMAGE=node:22-bookworm-slim
 ARG BUN_IMAGE=oven/bun:1.4.2
+ARG PYTHON_IMAGE=python:3.11-slim-bookworm
 FROM ${BUN_IMAGE} AS bun-binary
 # Git exists only in this build stage; base runtime does not gain Git.
 FROM ${NODE_IMAGE} AS sources
@@ -16,7 +17,7 @@ USER root
 COPY --from=bun-binary /usr/local/bin/bun /usr/local/bin/bun
 RUN ln -s /usr/local/bin/bun /usr/local/bin/bunx \
  && apt-get update && apt-get install -y --no-install-recommends \
-    python3 python3-venv python3-pip ca-certificates openssl tini \
+    python3 python3-venv python3-pip ca-certificates openssl tini patch \
  && rm -rf /var/lib/apt/lists/* \
  && python3 -m venv /opt/venv
 ENV PATH="/opt/venv/bin:/opt/tool-runtime/node_modules/.bin:${PATH}" \
@@ -32,6 +33,9 @@ COPY --from=sources /sources/twylt-pack-filesystem/requirements.txt /opt/config/
 RUN pip install --no-cache-dir /opt/twylt-source \
  && pip install --no-cache-dir -r /opt/config/python-base.txt \
  && rm -rf /opt/twylt-source
+# Python Docker SDK and the configuration loader are available in every Hub image.
+COPY config-loader /opt/config-loader
+RUN pip install --no-cache-dir 'docker>=7,<8' /opt/config-loader
 # ---- EXTRA PYTHON PACKAGES: edit config/python-extra.txt ----
 COPY config/python-extra.txt /opt/config/python-extra.txt
 RUN pip install --no-cache-dir -r /opt/config/python-extra.txt
@@ -51,7 +55,9 @@ RUN node -e 'const fs=require("fs"); const p="/opt/tool-runtime/package.json"; c
 COPY --from=sources /sources/toolhub /opt/toolhub
 COPY scripts/configure-toolhub.py /opt/configure-toolhub.py
 COPY sources.lock.json /opt/config/sources.lock.json
-RUN python3 /opt/configure-toolhub.py /opt/toolhub
+RUN python3 /opt/configure-toolhub.py /opt/toolhub \
+ && cd /opt/toolhub \
+ && patch --batch --fuzz=0 -p1 < /opt/config-loader/patches/0002-remote-instance-identity.patch
 WORKDIR /opt/toolhub
 # The pinned upstream bun.lock needs normalization with Bun 1.4.2.
 # This does not claim a fully locked transitive dependency build.
@@ -69,6 +75,9 @@ WORKDIR /workspace
 USER 1000:1000
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/container-entrypoint"]
 CMD ["toolhub"]
+
+# Docker worker uses the SDK over a mounted socket; no Docker daemon in the image.
+FROM common AS docker
 
 # ---- Extended: Git over HTTPS and SSH ----
 FROM common AS git
@@ -117,6 +126,18 @@ USER 1000:1000
 
 # Previous public target retained for existing commands.
 FROM docsanity AS okf
+
+# Standalone MCP facade -> namespace ToolHub router. No ToolHub/browser stack here.
+FROM ${PYTHON_IMAGE} AS mcp-bridge
+RUN apt-get update && apt-get install -y --no-install-recommends tini ca-certificates \
+ && rm -rf /var/lib/apt/lists/*
+COPY --from=sources /sources/toolhub-mcp-bridge /opt/toolhub-mcp-bridge
+RUN pip install --no-cache-dir /opt/toolhub-mcp-bridge && toolhub-mcp --help
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 HOME=/tmp \
+    TOOLHUB_MCP_TRANSPORT=streamable-http TOOLHUB_MCP_HOST=0.0.0.0 TOOLHUB_MCP_PORT=8000
+USER 1000:1000
+EXPOSE 8000
+ENTRYPOINT ["/usr/bin/tini", "--", "toolhub-mcp"]
 
 # Default build stays the small base variant.
 FROM common AS base

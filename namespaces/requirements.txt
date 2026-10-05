@@ -1,0 +1,10 @@
+# Install from repo root: python -m pip install -r namespaces/requirements.txt ./config-loader
+pydantic>=2,<3
+PyYAML>=6,<7
+Jinja2>=3,<4
+docker>=7,<8
+toolpack-builder @ git+https://github.com/Godhart/toolpack-builder.git@c6fc228fc07793edab2e138d876f18c02132f795
+# Needed when probing HDL tools on the host.
+hdl-order[twylt] @ git+https://github.com/Godhart/hdl-order.git@70c46c0a58230148f0e3bd9d45eec8ba1acc18de
+# Filesystem discovery dependencies from the same pinned upstream used by the image.
+-r https://raw.githubusercontent.com/Godhart/twylt-pack-filesystem/fa5daa98ed7dd066ea1e497b41132580a31b9c1e/requirements.txt

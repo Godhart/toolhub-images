@@ -1,0 +1,58 @@
+diff --git a/apps/api/src/index.ts b/apps/api/src/index.ts
+index 9b513ed..8db0abf 100644
+--- a/apps/api/src/index.ts
++++ b/apps/api/src/index.ts
+@@ -26,6 +26,27 @@ const fastify = Fastify({
+   trustProxy: true
+ });
+ 
++// Instance identity distinguishes different Docker hosts using the same port.
++fastify.addHook('onRequest', async (_req, reply) => {
++  reply.header('x-toolhub-node-id', SERVER_NODE_ID);
++});
++
++const isSameHub = async (remoteUrl: string, token?: string | null): Promise<boolean> => {
++  try {
++    const response = await fetch(remoteUrl.trim().replace(/\/+$/, '') + '/', {
++      headers: token ? { 'x-agent-password': token } : {},
++      signal: AbortSignal.timeout(5000),
++      redirect: 'error'
++    });
++    const same = response.headers.get('x-toolhub-node-id') === SERVER_NODE_ID;
++    await response.body?.cancel();
++    return same;
++  } catch {
++    // An offline peer may be configured; runtime x-hub-nodes checks remain active.
++    return false;
++  }
++};
++
+ // Транслитерация кириллицы в латиницу для безопасных слагов
+ const cyrillicMap: Record<string, string> = {
+   'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'yo', 'ж': 'zh',
+@@ -652,12 +673,7 @@ fastify.register(async (admin) => {
+ 
+     try {
+       const sdk = new HubSDK(cat.remoteUrl, cat.remoteToken || undefined);
+-      const currentPort = Number(process.env.PORT) || 3000;
+-      const remoteUrlStr = cat.remoteUrl.toLowerCase();
+-
+-      const isSelf = remoteUrlStr.includes(`:${currentPort}`) ||
+-                     remoteUrlStr.includes(`localhost:${currentPort}`) ||
+-                     remoteUrlStr.includes(`127.0.0.1:${currentPort}`);
++      const isSelf = await isSameHub(cat.remoteUrl, cat.remoteToken);
+ 
+       const maxDepth = 15;
+       const visited = new Set<string>();
+@@ -754,10 +770,7 @@ fastify.register(async (admin) => {
+       // Проверка на зацикливание при попытке добавить REMOTE (включая добавление самого себя)
+       if (type === 'REMOTE' && remoteUrl) {
+         const cleanRemoteUrl = remoteUrl.trim().replace(/\/+$/, '');
+-        const currentPort = Number(process.env.PORT) || 3000;
+-        const isSelfUrl = cleanRemoteUrl.includes(`:${currentPort}`) || 
+-                          cleanRemoteUrl.includes(`localhost:${currentPort}`) || 
+-                          cleanRemoteUrl.includes(`127.0.0.1:${currentPort}`);
++        const isSelfUrl = await isSameHub(cleanRemoteUrl, remoteToken);
+ 
+         if (isSelfUrl) {
+           return reply.status(400).send({ error: 'Cycle protection!' });

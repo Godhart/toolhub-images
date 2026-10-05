@@ -1,0 +1,279 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$defs": {
+    "category": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "type": {
+          "enum": [
+            "LOCAL",
+            "REMOTE",
+            "MCP"
+          ]
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "appendPrompt": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "remoteUrl": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "remoteToken": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mcpCommand": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mcpArgs": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "mcpEnv": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "mcpIsStateful": {
+          "type": "boolean"
+        },
+        "tools": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {
+                "type": "string",
+                "minLength": 1
+              },
+              "slug": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+              },
+              "agentDescription": {
+                "type": "string"
+              },
+              "descriptionMd": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "code": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "packageJson": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "inputSchema": {
+                "type": "object"
+              },
+              "outputSchema": {
+                "type": "object"
+              },
+              "examples": {
+                "type": "array",
+                "items": {}
+              },
+              "timeoutMs": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "isActive": {
+                "type": "boolean"
+              },
+              "isMcpProxy": {
+                "type": "boolean"
+              },
+              "mcpMethodName": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "runnerType": {
+                "type": "string"
+              },
+              "runnerName": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "name"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "children": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/category"
+          }
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "type": "object",
+  "properties": {
+    "kind": {
+      "enum": [
+        "TOOLHUB_PACK",
+        "TOOLHUB_TOOL"
+      ]
+    },
+    "version": {
+      "type": [
+        "string",
+        "number"
+      ]
+    },
+    "exportedAt": {
+      "type": "string"
+    },
+    "category": {
+      "$ref": "#/$defs/category"
+    },
+    "tool": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "slug": {
+          "type": "string",
+          "minLength": 1,
+          "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+        },
+        "agentDescription": {
+          "type": "string"
+        },
+        "descriptionMd": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "code": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "packageJson": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "inputSchema": {
+          "type": "object"
+        },
+        "outputSchema": {
+          "type": "object"
+        },
+        "examples": {
+          "type": "array",
+          "items": {}
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "isActive": {
+          "type": "boolean"
+        },
+        "isMcpProxy": {
+          "type": "boolean"
+        },
+        "mcpMethodName": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "runnerType": {
+          "type": "string"
+        },
+        "runnerName": {
+          "type": "string"
+        }
+      },
+      "required": [
+        "name"
+      ],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "kind"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "kind": {
+            "const": "TOOLHUB_PACK"
+          }
+        }
+      },
+      "then": {
+        "required": [
+          "category"
+        ],
+        "not": {
+          "required": [
+            "tool"
+          ]
+        }
+      },
+      "else": {
+        "required": [
+          "tool"
+        ],
+        "not": {
+          "required": [
+            "category"
+          ]
+        }
+      }
+    }
+  ]
+}

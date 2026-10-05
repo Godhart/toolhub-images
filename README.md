@@ -1,7 +1,7 @@
-# ToolHub TWYLT Container Images 0.3.0
+# ToolHub TWYLT Container Images 0.4.0
 
 Образы Docker/Podman для ToolHub и запуска TWYLT-тулов с хоста.
-Один Dockerfile содержит пять основных target и совместимый псевдоним okf; отдельные Dockerfile не нужны.
+Один Dockerfile содержит варианты ToolHub и отдельный target MCP bridge.
 
 Отдельный образ OKF, его инициализация и работа с тулом описаны в [README-OKF.md](README-OKF.md).
 
@@ -23,6 +23,8 @@
 | Target | Состав |
 |---|---|
 | `base` (по умолчанию) | ToolHub + Bun 1.4.2, Node.js 22, Python 3.11, TWYLT Python 1.0.0, `@twylt/core` 0.2.3 из GitHub, TypeBox, Ajv, tsx, TypeScript и все зависимости twylt-pack-filesystem 0.5.0 |
+| `docker` | base с Python Docker SDK, отдельный тег для Docker worker |
+| `mcp-bridge` | отдельный Python образ toolhub-mcp-bridge:base, HTTP MCP → router |
 | `git` | base + Git, SSH-клиент, HTTPS-сертификаты |
 | `docs` | git + MkDocs/Material, Sphinx/MyST, Pandoc, Graphviz, Doxygen, TypeDoc, markdownlint-cli2, python-docx, openpyxl, python-pptx, pypdf, ReportLab, Pillow; XeLaTeX и кириллица |
 | `docsanity` (`okf` — псевдоним) | docs + docsanity / OKF Workspace 0.2.0 и @copperbox/okf-mcp 2.1.0; TWYLT-адаптер в tools/ для подключения через volume |
@@ -38,14 +40,12 @@ charset-normalizer. TOML читается встроенным tomllib из Pyth
 
 ## Сборка
 
-Распакуйте архив и перейдите в каталог, содержащий Dockerfile:
+Из корня репозитория:
 
 ```bash
-docker build --target base -t toolhub-twylt:base .
-docker build --target git  -t toolhub-twylt:git .
-docker build --target docs -t toolhub-twylt:docs .
-docker build --target hdl  -t toolhub-twylt:hdl .
-docker build --target docsanity -t toolhub-twylt:docsanity .
+./build.sh                          # все образы
+./build.sh base git docker hdl mcp-bridge
+CONTAINER_ENGINE=podman ./build.sh base mcp-bridge
 ```
 
 Для Podman замените `docker` на `podman`. BuildKit-специфичных инструкций нет.
@@ -89,21 +89,17 @@ Python использует `/opt/venv`, команда `python` уже указ
 Пересоберите образ после изменения dependencies. Во время исполнения новые
 раннеры TWYLT не вызывают pip/npm и не требуют доступа к реестрам пакетов.
 
-## Запуск ToolHub через Compose
+## Запуск namespace через Compose
 
-```bash
-mkdir -p data tools workspace
-cp .env.example .env
-# Задайте собственные пароли в .env перед первым запуском.
-# На Linux каталоги data/workspace должны быть доступны UID/GID контейнера.
-# Если ваш UID/GID = 1000:1000, обычно ничего менять не нужно.
-docker compose up -d --build
-```
+Сначала настройте YAML и запустите `namespaces/build_namespace.py`.
+Пошаговый запуск, параметры и примеры — в [namespaces/README.md](namespaces/README.md).
+Один router обслуживает коллекцию workers; в Lab настраивается только router.
+Образы предварительно собирает `build.sh`; Compose содержит только `image`.
 
-Откройте http://localhost:3000/admin/ . Порт опубликован только на loopback хоста.
-Для расширенного варианта измените одновременно `build.target` и `image` в compose.yaml.
-Для Podman можно использовать установленный Compose provider (`podman compose`),
-либо явный запуск ниже.
+В base доступны `toolhub-config validate`, `toolhub-config apply` и
+`toolhub-config serve` ([описание](config-loader/README.md)). `TOOLHUB_CONFIG`
+включает запуск по YAML. Следующие сведения об инициализации без YAML относятся
+к прежнему standalone-режиму.
 
 | Путь внутри | Назначение | Режим |
 |---|---|---|

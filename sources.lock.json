@@ -24,6 +24,14 @@
     "docsanity": {
       "url": "https://github.com/Godhart/docsanity.git",
       "commit": "0e53f00ee8006d0143f0357d01f491d406b51dbe"
+    },
+    "toolhub-mcp-bridge": {
+      "url": "https://github.com/Godhart/toolhub-mcp-bridge.git",
+      "commit": "ab534b85a0ea06999c962620f281100c5e9e6267"
+    },
+    "toolpack-builder": {
+      "url": "https://github.com/Godhart/toolpack-builder.git",
+      "commit": "c6fc228fc07793edab2e138d876f18c02132f795"
     }
   }
 }
