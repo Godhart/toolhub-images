@@ -1,0 +1,99 @@
+# Example toolhub namespace configuration file
+# Describes multiple toolhub instances that are working in conjunction
+# to provide necessary toolpaks within controlled environment
+
+# This file is the only source of thuth, every other file for namespace
+# is generated according to data specified in this file
+# with help of script namespace_builder.py
+
+# Namespace have on router toolhub that is doing nothing other than routes requests to other 'worker' hubs
+# Worker hubs are based on certain base image and containing one or more toolpack
+
+# Tools for namespace are gathered automatically using method based on source kind (git, copy)
+# Toolpacks for hubs are gathered automatically using coresponding method based on tool kind (e.g. toolpack-builder for TWYLTed tools)
+
+# Toolpacks are generated out of
+
+namespace:                          # Namespace setup
+    name        : example           # Namespace name, used as first suffix for containers name
+    uid         : 1000              # uid for containers
+    gid         : 1000              # gid for containers
+    host        : "127.0.0.1:"      # host for port map
+    port_base   : 3300              # port for port map NOTE: port base for hubs, and port number for router hub
+    path        : "./example"       # path for namespaces's root (containers compose.yaml, env, configs, toolhub data storage etc.). if relative - then it's relative to this file's parent folder
+    tools       : "tools"           # root path for toolsets storage. if starts with dot then relative to this file's parent folder, otherwise if it's not absolute - it's relative to root of namespace's folder
+    workspace   : "workspace"       # root path for workspace files of namespace (files for tools to opertate on). if starts with dot then relative to this file's parent folder, otherwise if it's not absolute - it's relative to root of namespace's folder
+
+    env         : {}                # extra environment for all hubs
+    env_router  : {}                # extra environment for router hub
+
+    limits:                         # Resources limits defaults
+        containers : 2              # Limit for simlutaneously running 'sub' containers (when containers are created by hub's tools (e.g. for command execution inside docker container)
+        tmp     : 512m              # Default tmp size limit
+        pids    : 128               # Default pids limits
+        mem     : 2g                # Default ram limits
+        cpu     : 2.0               # Default cpu limits
+    admin_pass  : replace-with-your-admin-password  # Admin password for every toolhub instance
+    agent_pass  : replace-with-your-agent-password  # Agent password for every toolhub instance
+    seed_lang   : ru                # Language for every toolhub instance. valid options: ru/en/zh
+
+
+options:        # Generation options
+    abs_paths   : True              # NOTE: if True then every host path is converted to absolute in resulting files
+    remove_unused_tools : True      # NOTE: if True then found tools folder that are not in toolsets are removed
+
+toolsets:                           # List of sources to automatically get / update toolsets. NOTE: toolsets that are not specified here would be removed
+    - name      : filesystem        # Name of folder within tools root
+      source_kind: git              # Kind of data source. `git` for fetching from git repo, `local` for making copy of local folder, `manual` for manual population by user
+      tools_kind: twylt             # Kind of tools. Helps to understand how to create toolpack. Only `twylt` is supported now
+      data:                         # Options for data retrival
+        path: https://github.com/Godhart/twylt-pack-filesystem.git  # Git url or path in local folder (depending on kind)
+        ref:  main                  # Git only: branch, tag or commit to retrieve
+        update: always              # possible values: always/once
+    - { name: git,        kind: git, data: { url: https://github.com/Godhart/twylt-pack-git.git, ref: main }}
+    - { name: docker,     kind: git, data: { url: https://github.com/Godhart/twylt-pack-docker.git, ref: main }}
+    - { name: docsanity,  kind: git, data: { url: https://github.com/Godhart/docsanity.git, ref: main }}
+    - { name: hdl-order,  kind: git, data: { url: https://github.com/Godhart/hdl-order.git, ref: main }}
+
+hubs:           # All worker hubs lists
+    - name      : filesystem        # Name of hub, will be as second suffix for container name and as folder name within namespace's data subfolders (config and data)
+      image     : toolhub-twylt:base # Image to use for this hub
+      env       : {}                # extra environment for this hub (in addition to namespace env)
+      port      : 1                 # A number that would be added to namespace's port_base to generate this hub's port map
+      kind      : general           # hub kind: `general` for general tools caller, `docker` for tools within docker caller. `docker` hubs have docker socket. `docker` hubs are not having `workspace` but they could map it to container they are invoking
+      packs:    # List of packs to include in this hub
+      - toolset : filesystem        # Toolset name to look within
+        prefix  : filesystem        # Optional prefix (aka folder in toolhub) to gather tools into
+        exclude : []                # Optional List of tools to exclude from pack (e.g. [fs_remove, fs_move])
+        toolpak_builder_kwargs: {}  # Optional named arguments for toolpack builders in for of dictionary. Key - argument name, value - argument value
+      limits:   # NOTE: Optional limits for this hub
+        tmp     : 128m
+        pids    : 128
+        mem     : 1g
+        cpu     : 1.0
+      mcps:     [] # List of mcps to include in this hub # TODO: to be defined
+
+    - name      : git
+      image     : toolhub-twylt:git
+      port      : 2
+      packs:
+      - {prefix: git, toolset: git, exclude: [] }
+
+    - name      : docker
+      image     : toolhub-twylt:docker
+      kind      : docker
+      port      : 3
+      packs:
+      - {prefix: exec, toolset: docker, exclude: [] }
+
+    - name      : docsanity
+      image     : toolhub-twylt:docsanity
+      port      : 4
+      packs:
+      - {prefix: docsanity, toolset: docsanity, exclude: [] }
+
+    - name      : hdl
+      image     : toolhub-twylt:hdl
+      port      : 5
+      packs:
+      - {prefix: hdl, ptoolseth: hdl-order, exclude: [] }

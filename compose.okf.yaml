@@ -1,9 +1,0 @@
-services:
-  toolhub:
-    build:
-      target: docsanity
-    image: toolhub-twylt:docsanity
-    environment:
-      OKF_WORKSPACE_STATE: /okf-state
-    volumes:
-      - ./okf-state:/okf-state

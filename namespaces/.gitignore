@@ -1,0 +1,7 @@
+**/*
+!.gitignore
+!compose.template.yaml
+!env.template
+!build_namespace.py
+!toolhub-namespace-example.yaml
+!compose.docsanity.yaml
