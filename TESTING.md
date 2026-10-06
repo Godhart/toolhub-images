@@ -1,8 +1,12 @@
 # Проверки 0.4.0 — domain
 
-- 39 passed: генерация и валидация domain, loader/SQLite, повторная сборка,
+- 52 passed: генерация и валидация domain, loader/SQLite, повторная сборка,
   обновление once/always, rollback при ошибке discovery, очистка управляемых
   toolsets, symlink escape, Docker workspace/socket settings, пути/порты/секреты.
+- Добавлены проверки network defaults/overrides, внутренней Compose сети,
+  Docker child network policy и отклонения невалидных значений.
+  Сетевая изоляция проверена по сгенерированной конфигурации; запуск контейнеров
+  с network=false не проверен без Docker/Podman.
 - Нативный сквозной тест: реальный ToolHub worker + router (Bun 1.4.2),
   применение сгенерированных toolpacks через loader, HTTP-вызов echo через REMOTE;
   запуск upstream toolhub-mcp-bridge и MCP initialize/list_tools/call_tool до echo.

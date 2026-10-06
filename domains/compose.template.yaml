@@ -5,3 +5,5 @@ services:
   {{ service_name }}:
 {{ service | yaml | indent(4, true) }}
 {% endfor %}
+networks:
+{{ compose.networks | yaml | indent(2, true) }}

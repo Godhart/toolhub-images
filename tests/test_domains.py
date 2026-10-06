@@ -170,3 +170,53 @@ def test_symlink_escape_rejected(fixture):
     (src/'escape').symlink_to(path.parent,target_is_directory=True)
     with pytest.raises(ValueError,match='symlink escapes'):generate(path)
     assert not (path.parent/'generated/compose.yaml').exists()
+
+
+@pytest.mark.parametrize('default,override', [(False,None),(False,True),(True,None),(True,False)])
+def test_network_inheritance_and_overrides(fixture,default,override):
+    path,c,src=fixture
+    c['domain']['network']=default
+    c['hubs'][0]['network']=override
+    put(path,c);generate(path)
+    compose=yaml.safe_load((path.parent/'generated/compose.yaml').read_text())
+    services=compose['services'];effective=default if override is None else override
+    for name,enabled in [('toolhub-test',default),('toolhub-test-mcp',default),('toolhub-test-worker',effective)]:
+        assert services[name]['networks']==['domain-internal']+(['domain-egress'] if enabled else [])
+        assert 'network_mode' not in services[name]
+    assert compose['networks']['domain-internal']=={'internal':True}
+    assert ('domain-egress' in compose['networks'])==(default or effective)
+    if default or effective: assert compose['networks']['domain-egress']=={'internal':False}
+    assert services['toolhub-test']['ports'][0]['published']==str(c['domain'].get('port_base',3300))
+
+
+def test_network_defaults_and_private_domain(fixture):
+    path,c,src=fixture;generate(path)
+    compose=yaml.safe_load((path.parent/'generated/compose.yaml').read_text())
+    assert all(s['networks']==['domain-internal','domain-egress'] for s in compose['services'].values())
+    c['domain']['network']=False;c['hubs']=[];c['toolsets']=[];c['bridge']={'enabled':False}
+    put(path,c);generate(path)
+    compose=yaml.safe_load((path.parent/'generated/compose.yaml').read_text())
+    assert compose['networks']=={'domain-internal':{'internal':True}}
+    assert compose['services']['toolhub-test']['networks']==['domain-internal']
+
+
+@pytest.mark.parametrize('default,override',[(False,None),(False,True),(True,None),(True,False)])
+def test_docker_child_network_policy(fixture,default,override):
+    path,c,src=fixture
+    c['domain']['network']=default
+    c['hubs'][0].update(kind='docker',network=override,docker_socket_gid=998,docker_workspace='none')
+    put(path,c);generate(path)
+    enabled=default if override is None else override
+    assert "TWYLT_DOCKER_DISABLE_NETWORK='"+('false' if enabled else 'true')+"'" in (path.parent/'generated/.env-worker').read_text()
+
+
+@pytest.mark.parametrize('change',[
+ lambda c:c['domain'].update(network='false'),
+ lambda c:c['domain'].update(network=None),
+ lambda c:c['hubs'][0].update(network=1),
+ lambda c:c['hubs'][0].update(env={'TWYLT_DOCKER_DISABLE_NETWORK':'false'}),
+])
+def test_invalid_network_policy_before_writes(fixture,change):
+    path,c,src=fixture;change(c);put(path,c)
+    with pytest.raises(ValidationError):generate(path)
+    assert not (path.parent/'generated').exists()

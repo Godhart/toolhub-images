@@ -40,3 +40,9 @@
 18. TWYLT TypeScript берётся из GitHub 0.2.3 без прежних локальных исправлений.
 19. Только контейнерные адаптации ToolHub остаются локальным fail-fast скриптом.
     Внешние тесты исполняются из полученных исходников, не копируются в проект.
+
+## Domain network policy
+
+- `domain.network: true` preserves existing external connectivity. Worker boolean overrides inherit on missing/null; router and bridge use the domain default.
+- Every service joins a Compose internal network for router/worker traffic. Only enabled services join the egress network. `network_mode: none` would break REMOTE routing.
+- Docker workers receive the matching twylt-pack-docker child-container policy through `TWYLT_DOCKER_DISABLE_NETWORK`. Daemon image pulls and arbitrary programs using the socket are outside that tool policy.

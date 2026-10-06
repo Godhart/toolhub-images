@@ -2,7 +2,7 @@
 import ipaddress
 import re
 from typing import Annotated, Literal
-from pydantic import BaseModel, ConfigDict, Field, model_validator, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, model_validator, field_validator
 
 Name = Annotated[str, Field(pattern=r'^[a-z][a-z0-9-]{0,47}$')]
 Env = dict[str, str | int | float | bool]
@@ -33,6 +33,7 @@ class Domain(Strict):
     path: str
     tools: str = 'tools'
     workspace: str = 'workspace'
+    network: StrictBool = True
     env: Env = Field(default_factory=dict)
     env_router: Env = Field(default_factory=dict)
     limits: Limits = Field(default_factory=Limits)
@@ -129,6 +130,7 @@ class Hub(Strict):
     env: Env = Field(default_factory=dict)
     port: int | None = Field(None, ge=1, le=65535)
     kind: Literal['general','docker'] = 'general'
+    network: StrictBool | None = None
     packs: list[Pack] = Field(default_factory=list)
     limits: LimitOverrides = Field(default_factory=LimitOverrides)
     mcps: list = Field(default_factory=list)
@@ -182,7 +184,7 @@ class Config(Strict):
                 if key in {'TOOLHUB_CONFIG','TOOLHUB_CONFIG_MODE','DATABASE_URL','PORT',
                            'TOOLHUB_ADMIN_PASSWORD','TOOLHUB_AGENT_PASSWORD','TOOLHUB_AGENT_SECRET',
                            'TOOLHUB_URL','WORKSPACE_HOST_PATH','TWYLT_WORKSPACE_ROOT','DOCKER_HOST',
-                           'TWYLT_DOCKER_MAX_CONTAINERS'}:
+                           'TWYLT_DOCKER_MAX_CONTAINERS','TWYLT_DOCKER_DISABLE_NETWORK'}:
                     raise ValueError('environment key is owned by domain generator')
                 if any(c in str(value) for c in '\r\n\x00'):
                     raise ValueError('multiline environment values are not supported')

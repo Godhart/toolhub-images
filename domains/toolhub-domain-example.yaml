@@ -11,6 +11,7 @@ domain:
   admin_pass: replace-with-your-admin-password
   agent_pass: replace-with-your-agent-password
   seed_lang: ru
+  network: true                   # default external access; false keeps only domain communication
   env: {}
   env_router: {}
   limits: {containers: 2, tmp: 512m, pids: 128, mem: 2g, cpu: 2.0}
@@ -44,6 +45,7 @@ hubs:
     image: toolhub-twylt:base
     port: 1                       # omit/null to keep worker private inside Compose
     kind: general
+    network: false                # override the domain default for this worker
     env: {}
     limits: {tmp: 128m, pids: 128, mem: 1g, cpu: 1.0}
     packs:

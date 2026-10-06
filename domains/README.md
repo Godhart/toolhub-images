@@ -40,6 +40,42 @@ Bridge можно отключить: `bridge.enabled: false`. Bridge этого
 отдельной клиентской авторизации: оставляйте host=127.0.0.1 либо используйте
 защищённый reverse proxy для внешнего доступа.
 
+## Внешний доступ в сеть
+
+`domain.network` — boolean, по умолчанию `true`. `hubs[].network` переопределяет
+его для конкретного worker; отсутствие поля или `null` наследует значение домена.
+Router и MCP bridge используют значение домена.
+
+```yaml
+domain:
+  # остальные обязательные поля — как в примере
+  network: false
+hubs:
+  - name: filesystem
+    image: toolhub-twylt:base
+    # network не задан: внешний доступ запрещён
+  - name: git
+    image: toolhub-twylt:git
+    network: true
+```
+
+Генератор создаёт `domain-internal` с `internal: true` и подключает к ней все
+сервисы. Router продолжает обращаться к workers через DNS-имена Compose.
+Сервисы с разрешённым внешним доступом дополнительно подключаются к
+`domain-egress`; при отсутствии таких сервисов эта сеть не создаётся.
+Это использует стандартную [сетевую изоляцию Compose](https://docs.docker.com/reference/compose-file/networks/#internal).
+Параметр управляет исходящим доступом за пределы домена, опубликованные порты
+router/bridge/workers остаются заданными через host и port.
+
+Для `kind: docker` дополнительно задаётся `TWYLT_DOCKER_DISABLE_NETWORK`:
+при `network: false` twylt-pack-docker отвергает запросы на запуск дочернего
+контейнера с включённой сетью. Эта env-переменная управляется генератором и
+не может переопределяться через env. Скачивание образов самим daemon и доступ
+сборщика/генератора к GitHub не регулируются этой настройкой.
+Доступ к Docker socket позволяет другим программам управлять daemon;
+политика дочерних контейнеров обеспечивается именно twylt-pack-docker.
+После изменения network пересоздайте сервисы командой из раздела запуска.
+
 ## Пути и файлы
 
 `domain.path` разрешается относительно YAML. `tools` и `workspace`:

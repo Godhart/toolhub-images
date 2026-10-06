@@ -1,5 +1,7 @@
 # 0.4.0
 
+- Domain/worker network defaults и overrides; внутренний router traffic сохраняется.
+
 - Domain YAML → toolsets, toolpacks, worker/router configs, env и Compose.
 - Встроен toolhub-config-loader 0.1.0 и исправление идентичности REMOTE ToolHub.
 - Python Docker SDK в base; target docker и настройка socket/workspace.

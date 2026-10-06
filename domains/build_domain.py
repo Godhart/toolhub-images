@@ -85,6 +85,10 @@ def effective_limits(config, hub=None):
     return Limits(**fields)
 
 
+def network_enabled(config, hub=None):
+    return config.domain.network if hub is None or hub.network is None else hub.network
+
+
 def env_for(config, workspace, hub=None):
     domain = config.domain
     result = {k:text_value(v) for k,v in domain.env.items()}
@@ -97,6 +101,7 @@ def env_for(config, workspace, hub=None):
             result['TWYLT_WORKSPACE_ROOT'] = str(workspace) if hub.docker_workspace == 'host-readonly' else '/tmp/docker-workspace'
             result['DOCKER_HOST'] = 'unix:///var/run/docker.sock'
             result['TWYLT_DOCKER_MAX_CONTAINERS'] = str(effective_limits(config,hub).containers)
+            result['TWYLT_DOCKER_DISABLE_NETWORK'] = 'false' if network_enabled(config,hub) else 'true'
         else:
             result['TWYLT_WORKSPACE_ROOT'] = '/workspace'
         result.setdefault('TWYLT_INCIDENT_LOG','/data/incidents.jsonl')
@@ -129,6 +134,9 @@ def make_compose(config, root, tools, workspace):
                 'pids_limit':limits.pids,'mem_limit':limits.mem,'cpus':limits.cpu,
                 'healthcheck':{'test':['CMD','python','-c','from pathlib import Path; import socket; assert Path("/tmp/toolhub-config.ready").exists(); socket.create_connection(("127.0.0.1",3000),2).close()'],
                                'interval':'5s','timeout':'3s','start_period':'90s','retries':12}}
+        data['networks'] = ['domain-internal']
+        if network_enabled(config,hub):
+            data['networks'].append('domain-egress')
         offset = hub.port if hub else 0
         if offset is not None:
             data['ports']=[{'target':3000,'published':str(domain.port_base+offset),'host_ip':domain.host,'protocol':'tcp'}]
@@ -166,7 +174,14 @@ def make_compose(config, root, tools, workspace):
             'pids_limit':128,'mem_limit':'512m','cpus':1.0,
             'ports':[{'target':8000,'published':str(domain.port_base+config.bridge.port),'host_ip':domain.host,'protocol':'tcp'}],
             'depends_on':{router:{'condition':'service_healthy'}}}
-    return {'name':'toolhub-'+domain.name, 'services':services}
+    if config.bridge.enabled:
+        services[router+'-mcp']['networks'] = ['domain-internal']
+        if network_enabled(config):
+            services[router+'-mcp']['networks'].append('domain-egress')
+    networks = {'domain-internal': {'internal': True}}
+    if any('domain-egress' in service['networks'] for service in services.values()):
+        networks['domain-egress'] = {'internal': False}
+    return {'name':'toolhub-'+domain.name, 'services':services, 'networks':networks}
 
 
 def populate(toolset, root, tools, stage, source):
