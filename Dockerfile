@@ -127,7 +127,7 @@ USER 1000:1000
 # Previous public target retained for existing commands.
 FROM docsanity AS okf
 
-# Standalone MCP facade -> namespace ToolHub router. No ToolHub/browser stack here.
+# Standalone MCP facade -> domain ToolHub router. No ToolHub/browser stack here.
 FROM ${PYTHON_IMAGE} AS mcp-bridge
 RUN apt-get update && apt-get install -y --no-install-recommends tini ca-certificates \
  && rm -rf /var/lib/apt/lists/*

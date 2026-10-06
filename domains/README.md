@@ -1,4 +1,4 @@
-# Namespace: один router, несколько workers
+# Domain: один router, несколько workers
 
 YAML — источник конфигурации. Генератор получает исходники тулов, запускает их
 TWYLT discovery через upstream toolpack-builder и формирует Compose, toolpacks,
@@ -13,16 +13,16 @@ TWYLT discovery через upstream toolpack-builder и формирует Compo
 ```bash
 python3 -m venv .venv
 . .venv/bin/activate
-pip install ./config-loader -r namespaces/requirements.txt
-cp namespaces/toolhub-namespace-example.yaml namespaces/my.yaml
+pip install ./config-loader -r domains/requirements.txt
+cp domains/toolhub-domain-example.yaml domains/my.yaml
 # Отредактируйте name, path, workspace, uid/gid, пароли и коллекцию инструментов.
-chmod 600 namespaces/my.yaml
-python namespaces/build_namespace.py namespaces/my.yaml --check
-python namespaces/build_namespace.py namespaces/my.yaml
+chmod 600 domains/my.yaml
+python domains/build_domain.py domains/my.yaml --check
+python domains/build_domain.py domains/my.yaml
 ./build.sh base git docker hdl mcp-bridge
 # Используйте path из своего YAML; ниже путь из примера:
-docker compose -f namespaces/example/compose.yaml config --quiet
-docker compose -f namespaces/example/compose.yaml up -d
+docker compose -f domains/example/compose.yaml config --quiet
+docker compose -f domains/example/compose.yaml up -d
 ```
 
 Для Podman: `CONTAINER_ENGINE=podman ./build.sh ...`, затем `podman compose`
@@ -42,21 +42,21 @@ Bridge можно отключить: `bridge.enabled: false`. Bridge этого
 
 ## Пути и файлы
 
-`namespace.path` разрешается относительно YAML. `tools` и `workspace`:
+`domain.path` разрешается относительно YAML. `tools` и `workspace`:
 абсолютный путь используется напрямую; путь с начальной точкой — относительно
-YAML; обычный относительный путь — относительно namespace.path. Несколько
-namespace могут явно использовать один workspace. Управляемые tools/config/data
+YAML; обычный относительный путь — относительно domain.path. Несколько
+domain могут явно использовать один workspace. Управляемые tools/config/data
 не должны перекрываться с workspace. `abs_paths: false` даёт относительные пути
 в Compose, разрешаемые от его каталога.
 
-В namespace.path создаются:
+В domain.path создаются:
 
 - `compose.yaml`, `.env-_router_`, `.env-<worker>`, `.env-_bridge_` (последний при включённом bridge);
 - `config/_router_/toolhub.yaml`, `config/<worker>/toolhub.yaml`, `*.toolpack`;
 - `data/_router_/`, `data/<worker>/` для SQLite и backup;
-- `.namespace-generated.json` с источниками и Git revisions; `.namespace.lock` для блокировки генерации.
+- `.domain-generated.json` с источниками и Git revisions; `.domain.lock` для блокировки генерации.
 
-Исходники находятся в `namespace.tools/<toolset>`, workspace — в указанном
+Исходники находятся в `domain.tools/<toolset>`, workspace — в указанном
 каталоге. Env-файлы имеют права 0600; исходный YAML тоже содержит пароли.
 Генератор не редактирует существующие SQLite. При запуске `toolhub-config serve`
 инициализирует схему, применяет YAML и запускает API. По умолчанию
@@ -67,7 +67,7 @@ namespace могут явно использовать один workspace. Уп�
 После изменения YAML повторите генерацию и выполните:
 
 ```bash
-docker compose -f namespaces/example/compose.yaml up -d --force-recreate --remove-orphans
+docker compose -f domains/example/compose.yaml up -d --force-recreate --remove-orphans
 ```
 
 Recreate необходим и при изменении только bind-mounted конфигураций. Не запускайте

@@ -89,10 +89,10 @@ Python использует `/opt/venv`, команда `python` уже указ
 Пересоберите образ после изменения dependencies. Во время исполнения новые
 раннеры TWYLT не вызывают pip/npm и не требуют доступа к реестрам пакетов.
 
-## Запуск namespace через Compose
+## Запуск domain через Compose
 
-Сначала настройте YAML и запустите `namespaces/build_namespace.py`.
-Пошаговый запуск, параметры и примеры — в [namespaces/README.md](namespaces/README.md).
+Сначала настройте YAML и запустите `domains/build_domain.py`.
+Пошаговый запуск, параметры и примеры — в [domains/README.md](domains/README.md).
 Один router обслуживает коллекцию workers; в Lab настраивается только router.
 Образы предварительно собирает `build.sh`; Compose содержит только `image`.
 

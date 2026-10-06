@@ -6,7 +6,7 @@
 **/*.db
 **/.env
 .env
-namespaces
+domains
 tools
 **/*.egg-info
 **/.pytest_cache

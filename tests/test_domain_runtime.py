@@ -11,7 +11,7 @@ import urllib.request
 
 import pytest
 import yaml
-from test_namespaces import fixture, generate
+from test_domains import fixture, generate
 
 
 def port():
@@ -33,8 +33,8 @@ def test_router_worker_bridge(fixture, tmp_path, monkeypatch):
     pack.write_text(pack.read_text().replace('/tools/echo/', str(root/'tools/echo')+'/'))
     router = root/'config/_router_/toolhub.yaml'
     router.write_text(router.read_text().replace('http://toolhub-test-worker:3000', f'http://127.0.0.1:{worker_port}'))
-    env = dict(os.environ, TOOLHUB_ADMIN_PASSWORD=config['namespace']['admin_pass'],
-               TOOLHUB_AGENT_PASSWORD=config['namespace']['agent_pass'], NO_PROXY='127.0.0.1,localhost')
+    env = dict(os.environ, TOOLHUB_ADMIN_PASSWORD=config['domain']['admin_pass'],
+               TOOLHUB_AGENT_PASSWORD=config['domain']['agent_pass'], NO_PROXY='127.0.0.1,localhost')
     env['PATH'] = str(Path(sys.executable).parent)+':'+str(Path(os.environ['BUN_BIN']).parent)+':'+env['PATH']
     processes = []
     logs = []

@@ -11,8 +11,8 @@ import yaml
 from pydantic import ValidationError
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0,str(ROOT/'namespaces'))
-from build_namespace import generate, resolve_paths, Config, dotenv
+sys.path.insert(0,str(ROOT/'domains'))
+from build_domain import generate, resolve_paths, Config, dotenv
 from toolhub_config.config import load_config
 from toolhub_config.database import apply_config
 
@@ -37,13 +37,13 @@ if __name__ == "__main__": Echo.run()
 def fixture(tmp_path):
     src=tmp_path/'source';(src/'tools/echo').mkdir(parents=True)
     (src/'tools/echo/tool.py').write_text(TOOL)
-    config={'namespace':{'name':'test','path':'./generated','uid':os.getuid(),'gid':os.getgid(),
+    config={'domain':{'name':'test','path':'./generated','uid':os.getuid(),'gid':os.getgid(),
                          'admin_pass':"a$#'b\\x",'agent_pass':'s$secret','host':'127.0.0.1:',
                          'workspace':str(tmp_path/'shared')},
             'options':{'remove_unused_tools':True},
             'toolsets':[{'name':'echo','source_kind':'local','data':{'path':str(src),'update':'always'}}],
             'hubs':[{'name':'worker','image':'toolhub-twylt:base','port':1,'packs':[{'toolset':'echo','prefix':'custom/path'}]}]}
-    path=tmp_path/'namespace.yaml';path.write_text(yaml.safe_dump(config))
+    path=tmp_path/'domain.yaml';path.write_text(yaml.safe_dump(config))
     return path,config,src
 
 def put(path,config): path.write_text(yaml.safe_dump(config))
@@ -104,7 +104,7 @@ def test_manual_relative_and_shared_workspace(fixture):
     c['toolsets'][0]={'name':'echo','source_kind':'manual'};c['hubs'][0].pop('port');put(path,c);generate(path)
     comp=yaml.safe_load((root/'compose.yaml').read_text());worker=comp['services']['toolhub-test-worker']
     assert worker['env_file']==['./.env-worker'] and 'ports' not in worker
-    c['namespace']['name']='second';c['namespace']['path']='./second';c['toolsets']=[];c['hubs']=[];put(path,c)
+    c['domain']['name']='second';c['domain']['path']='./second';c['toolsets']=[];c['hubs']=[];put(path,c)
     generate(path)
     assert (root/'tools/echo/tools/echo/tool.py').exists()
 
@@ -122,8 +122,8 @@ def test_exclude_and_legacy_keys(fixture):
  lambda c:c['hubs'][0]['packs'][0].update(toolset='missing'),
  lambda c:c['hubs'][0].update(port=100),
  lambda c:c['hubs'][0].update(mcps=[{'command':'foo'}]),
- lambda c:c['namespace'].update(name='../bad'),
- lambda c:c['namespace'].update(env={'TOOLHUB_CONFIG':'bad'}),
+ lambda c:c['domain'].update(name='../bad'),
+ lambda c:c['domain'].update(env={'TOOLHUB_CONFIG':'bad'}),
  lambda c:c['hubs'][0]['packs'][0].update(toolpak_builder_kwargs={'root':'/etc'}),
 ])
 def test_invalid_before_writes(fixture,change):
@@ -137,7 +137,7 @@ def test_git_fetch_and_revision(fixture):
     git('init');git('config','user.email','test@localhost');git('config','user.name','Test');git('add','.');git('commit','-m','fixture')
     c['toolsets'][0]['source_kind']='git';c['toolsets'][0]['data']['ref']=git('rev-parse','HEAD').strip();put(path,c)
     generate(path)
-    manifest=json.loads((path.parent/'generated/.namespace-generated.json').read_text())
+    manifest=json.loads((path.parent/'generated/.domain-generated.json').read_text())
     assert manifest['revisions']['echo']==c['toolsets'][0]['data']['ref']
     assert not (path.parent/'generated/tools/echo/.git').exists()
 
@@ -152,7 +152,7 @@ def test_docker_none_and_limits(fixture):
 
 def test_duplicate_yaml_and_check(fixture):
     path,c,src=fixture;generate(path,True);assert not (path.parent/'generated').exists()
-    path.write_text('namespace: {}\nnamespace: {}\n')
+    path.write_text('domain: {}\ndomain: {}\n')
     with pytest.raises(Exception,match='unique'):generate(path)
 
 

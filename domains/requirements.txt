@@ -1,4 +1,4 @@
-# Install from repo root: python -m pip install -r namespaces/requirements.txt ./config-loader
+# Install from repo root: python -m pip install -r domains/requirements.txt ./config-loader
 pydantic>=2,<3
 PyYAML>=6,<7
 Jinja2>=3,<4

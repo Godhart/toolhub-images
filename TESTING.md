@@ -1,32 +1,32 @@
-# Проверки 0.4.0 — namespace
+# Проверки 0.4.0 — domain
 
-- 39 passed: генерация и валидация namespace, loader/SQLite, повторная сборка,
+- 39 passed: генерация и валидация domain, loader/SQLite, повторная сборка,
   обновление once/always, rollback при ошибке discovery, очистка управляемых
   toolsets, symlink escape, Docker workspace/socket settings, пути/порты/секреты.
 - Нативный сквозной тест: реальный ToolHub worker + router (Bun 1.4.2),
   применение сгенерированных toolpacks через loader, HTTP-вызов echo через REMOTE;
   запуск upstream toolhub-mcp-bridge и MCP initialize/list_tools/call_tool до echo.
-- Установка namespaces/requirements.txt и локального config-loader прошла.
+- Установка domains/requirements.txt и локального config-loader прошла.
 - Дополнительно сгенерированы toolpacks из настоящих filesystem, Docker и HDL
   исходников: 13, 2 и 8 инструментов в корневых категориях соответственно.
 - Shell syntax и git diff --check.
 
-Команды (из корня, в venv с namespace dependencies и pytest):
+Команды (из корня, в venv с domain dependencies и pytest):
 
 ```bash
-python -m pytest -q tests/test_namespaces.py config-loader/tests/test_loader.py
+python -m pytest -q tests/test_domains.py config-loader/tests/test_loader.py
 # TOOLHUB_DIR: checkout закреплённого ToolHub с configure-toolhub.py,
 # patches/0002-remote-instance-identity.patch, bun install и Prisma Client.
 # В окружении должен быть установлен upstream toolhub-mcp-bridge.
 TOOLHUB_DIR=/absolute/prepared/toolhub BUN_BIN=/absolute/bin/bun \
-  python -m pytest -q tests/test_namespace_runtime.py
+  python -m pytest -q tests/test_domain_runtime.py
 ```
 
 Нативный тест заменяет контейнерные пути/DNS локальными эквивалентами.
 Docker/Podman в среде отсутствуют: сборка образов, Compose networking, socket
 permissions и read-only rootfs **не проверены запуском контейнеров**.
-Для проверки образов: `tests/smoke-namespace-images.sh docker`; затем
-сгенерируйте namespace и выполните `docker compose -f <path>/compose.yaml config --quiet`
+Для проверки образов: `tests/smoke-domain-images.sh docker`; затем
+сгенерируйте domain и выполните `docker compose -f <path>/compose.yaml config --quiet`
 и `up -d`. Исторические результаты ниже относятся к прежним версиям.
 
 # Проверки 0.1.0

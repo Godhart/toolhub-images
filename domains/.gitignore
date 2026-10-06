@@ -1,0 +1,4 @@
+# Runtime domains are generated directories, never source-controlled.
+example/
+__pycache__/
+*.pyc

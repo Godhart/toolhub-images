@@ -1,4 +1,4 @@
-"""Validated namespace source of truth. No filesystem mutations here."""
+"""Validated domain source of truth. No filesystem mutations here."""
 import ipaddress
 import re
 from typing import Annotated, Literal
@@ -24,7 +24,7 @@ class LimitOverrides(Strict):
     mem: str | None = Field(None, pattern=r'^[1-9][0-9]*[kKmMgG]$')
     cpu: float | None = Field(None, gt=0, allow_inf_nan=False)
 
-class Namespace(Strict):
+class Domain(Strict):
     name: Name
     uid: int = Field(1000, ge=0)
     gid: int = Field(1000, ge=0)
@@ -155,7 +155,7 @@ class Bridge(Strict):
     port: int = Field(100, ge=1, le=65535)
 
 class Config(Strict):
-    namespace: Namespace
+    domain: Domain
     options: Options = Field(default_factory=Options)
     toolsets: list[Toolset] = Field(default_factory=list)
     hubs: list[Hub] = Field(default_factory=list)
@@ -169,13 +169,13 @@ class Config(Strict):
         ports = [0] + [h.port for h in self.hubs if h.port is not None]
         if self.bridge.enabled:
             ports.append(self.bridge.port)
-        if len(ports) != len(set(ports)) or max(ports) + self.namespace.port_base > 65535:
+        if len(ports) != len(set(ports)) or max(ports) + self.domain.port_base > 65535:
             raise ValueError('duplicate or overflowing published ports')
         for hub in self.hubs:
             for pack in hub.packs:
                 if pack.toolset not in names:
                     raise ValueError('hub refers to an unknown toolset')
-        for env in [self.namespace.env, self.namespace.env_router] + [h.env for h in self.hubs]:
+        for env in [self.domain.env, self.domain.env_router] + [h.env for h in self.hubs]:
             for key, value in env.items():
                 if not re.fullmatch(r'[A-Za-z_][A-Za-z0-9_]*',key):
                     raise ValueError('invalid environment key')
@@ -183,10 +183,10 @@ class Config(Strict):
                            'TOOLHUB_ADMIN_PASSWORD','TOOLHUB_AGENT_PASSWORD','TOOLHUB_AGENT_SECRET',
                            'TOOLHUB_URL','WORKSPACE_HOST_PATH','TWYLT_WORKSPACE_ROOT','DOCKER_HOST',
                            'TWYLT_DOCKER_MAX_CONTAINERS'}:
-                    raise ValueError('environment key is owned by namespace generator')
+                    raise ValueError('environment key is owned by domain generator')
                 if any(c in str(value) for c in '\r\n\x00'):
                     raise ValueError('multiline environment values are not supported')
-        for value in [self.namespace.admin_pass, self.namespace.agent_pass]:
+        for value in [self.domain.admin_pass, self.domain.agent_pass]:
             if any(c in value for c in '\r\n\x00'):
                 raise ValueError('multiline passwords are not supported')
         return self

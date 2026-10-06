@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate YAML, stage toolsets and packs, then publish one namespace deployment.
+"""Validate YAML, stage toolsets and packs, then publish one domain deployment.
 
 Only generated files/toolsets are replaced. Database files are never modified here.
 ToolHub applies reset/merge when its service is started. Tool probing executes trusted
@@ -33,19 +33,19 @@ RUNNER = {'name':'TWYLT Python', 'type':'python_local', 'config':{
 
 
 def resolve_paths(config, source):
-    ns = config.namespace
-    root = Path(ns.path).expanduser()
+    domain = config.domain
+    root = Path(domain.path).expanduser()
     root = (source.parent / root).resolve() if not root.is_absolute() else root.resolve()
     def child(value):
         p = Path(value).expanduser()
         if p.is_absolute(): return p.resolve()
         return ((source.parent if value.startswith('.') else root) / p).resolve()
-    tools, workspace = child(ns.tools), child(ns.workspace)
+    tools, workspace = child(domain.tools), child(domain.workspace)
     if root == Path('/') or tools == Path('/') or workspace == Path('/'):
-        raise ValueError('filesystem root cannot be a namespace/tools/workspace directory')
+        raise ValueError('filesystem root cannot be a domain/tools/workspace directory')
     critical = [root/'data', root/'config']
     if tools == root or workspace == root or root.is_relative_to(tools) or root.is_relative_to(workspace):
-        raise ValueError('tools/workspace cannot contain namespace root')
+        raise ValueError('tools/workspace cannot contain domain root')
     for a, b in [(tools,workspace)] + [(x,y) for x in (tools,workspace) for y in critical]:
         if a.is_relative_to(b) or b.is_relative_to(a):
             raise ValueError('tools, workspace, config and data must not overlap')
@@ -79,18 +79,18 @@ def yaml_text(value):
 
 
 def effective_limits(config, hub=None):
-    fields = config.namespace.limits.model_dump()
+    fields = config.domain.limits.model_dump()
     if hub:
         fields.update(hub.limits.model_dump(exclude_none=True))
     return Limits(**fields)
 
 
 def env_for(config, workspace, hub=None):
-    ns = config.namespace
-    result = {k:text_value(v) for k,v in ns.env.items()}
-    result.update({k:text_value(v) for k,v in (hub.env if hub else ns.env_router).items()})
-    result.update(WORKSPACE_HOST_PATH=str(workspace), TOOLHUB_ADMIN_PASSWORD=ns.admin_pass,
-                  TOOLHUB_AGENT_PASSWORD=ns.agent_pass, TOOLHUB_SEED_LANG=ns.seed_lang,
+    domain = config.domain
+    result = {k:text_value(v) for k,v in domain.env.items()}
+    result.update({k:text_value(v) for k,v in (hub.env if hub else domain.env_router).items()})
+    result.update(WORKSPACE_HOST_PATH=str(workspace), TOOLHUB_ADMIN_PASSWORD=domain.admin_pass,
+                  TOOLHUB_AGENT_PASSWORD=domain.agent_pass, TOOLHUB_SEED_LANG=domain.seed_lang,
                   TOOLHUB_CONFIG='/config/toolhub.yaml', DATABASE_URL='file:/data/hub.db', PORT='3000')
     if hub:
         if hub.kind == 'docker':
@@ -112,7 +112,7 @@ def hub_config(config):
 
 
 def make_compose(config, root, tools, workspace):
-    ns = config.namespace
+    domain = config.domain
     def path(p):
         return str(p) if config.options.abs_paths else './' + os.path.relpath(p,root)
     def mount(src, dest, readonly=False):
@@ -122,7 +122,7 @@ def make_compose(config, root, tools, workspace):
         name = hub.name if hub else '_router_'
         limits = effective_limits(config,hub)
         data = {'image':hub.image if hub else 'toolhub-twylt:base', 'init':False,
-                'user':f'{ns.uid}:{ns.gid}', 'env_file':[path(root/f'.env-{name}')],
+                'user':f'{domain.uid}:{domain.gid}', 'env_file':[path(root/f'.env-{name}')],
                 'volumes':[mount(root/'data'/name,'/data'),mount(root/'config'/name,'/config',True)],
                 'read_only':True,'tmpfs':[f'/tmp:rw,nosuid,nodev,size={limits.tmp},mode=1777'],
                 'cap_drop':['ALL'],'security_opt':['no-new-privileges:true'],
@@ -131,7 +131,7 @@ def make_compose(config, root, tools, workspace):
                                'interval':'5s','timeout':'3s','start_period':'90s','retries':12}}
         offset = hub.port if hub else 0
         if offset is not None:
-            data['ports']=[{'target':3000,'published':str(ns.port_base+offset),'host_ip':ns.host,'protocol':'tcp'}]
+            data['ports']=[{'target':3000,'published':str(domain.port_base+offset),'host_ip':domain.host,'protocol':'tcp'}]
         if hub:
             for pack in hub.packs:
                 data['volumes'].append(mount(tools/pack.toolset, '/tools/'+pack.toolset,True))
@@ -145,28 +145,28 @@ def make_compose(config, root, tools, workspace):
                 gid = hub.docker_socket_gid
                 if gid is None and socket.exists(): gid = socket.stat().st_gid
                 if gid is not None: data['group_add']=[str(gid)]
-                elif ns.uid != 0:
+                elif domain.uid != 0:
                     raise ValueError('set docker_socket_gid or build on the daemon host with its socket present')
                 if hub.docker_workspace == 'host-readonly':
                     if any(workspace.is_relative_to(p) for p in map(Path,['/opt','/usr','/bin','/sbin','/etc','/proc','/sys','/dev','/data','/tools','/config'])):
                         raise ValueError('Docker workspace host path conflicts with container runtime paths')
                     data['volumes'].append(mount(workspace,str(workspace),True))
         return data
-    router = 'toolhub-'+ns.name
+    router = 'toolhub-'+domain.name
     services = {router:service()}
     for hub in config.hubs:
         services[router+'-'+hub.name] = service(hub)
     if config.hubs:
         services[router]['depends_on']={router+'-'+h.name:{'condition':'service_healthy'} for h in config.hubs}
     if config.bridge.enabled:
-        services[router+'-mcp']={'image':config.bridge.image,'user':f'{ns.uid}:{ns.gid}',
+        services[router+'-mcp']={'image':config.bridge.image,'user':f'{domain.uid}:{domain.gid}',
             'env_file':[path(root/'.env-_bridge_')], 'read_only':True,
             'tmpfs':['/tmp:rw,nosuid,nodev,size=64m,mode=1777'],
             'cap_drop':['ALL'],'security_opt':['no-new-privileges:true'],
             'pids_limit':128,'mem_limit':'512m','cpus':1.0,
-            'ports':[{'target':8000,'published':str(ns.port_base+config.bridge.port),'host_ip':ns.host,'protocol':'tcp'}],
+            'ports':[{'target':8000,'published':str(domain.port_base+config.bridge.port),'host_ip':domain.host,'protocol':'tcp'}],
             'depends_on':{router:{'condition':'service_healthy'}}}
-    return {'name':'toolhub-'+ns.name, 'services':services}
+    return {'name':'toolhub-'+domain.name, 'services':services}
 
 
 def populate(toolset, root, tools, stage, source):
@@ -183,7 +183,7 @@ def populate(toolset, root, tools, stage, source):
         if not origin.is_absolute(): origin = source.parent/origin
         origin = origin.resolve()
         if not origin.is_dir() or tools.is_relative_to(origin) or root.is_relative_to(origin):
-            raise ValueError('local source must exist and cannot contain namespace/tools output')
+            raise ValueError('local source must exist and cannot contain domain/tools output')
         shutil.copytree(origin,target,symlinks=True,ignore=shutil.ignore_patterns('.git','__pycache__'))
         revision = None
     else:
@@ -231,9 +231,9 @@ def build_pack(pack, origin):
 
 @contextmanager
 def root_lock(root):
-    with (root/'.namespace.lock').open('a') as file:
+    with (root/'.domain.lock').open('a') as file:
         try: fcntl.flock(file,fcntl.LOCK_EX|fcntl.LOCK_NB)
-        except BlockingIOError: raise ValueError('another namespace generator owns this root') from None
+        except BlockingIOError: raise ValueError('another domain generator owns this root') from None
         yield
 
 
@@ -265,7 +265,7 @@ def generate(source, check=False):
     config = Config.model_validate(read_document(source))
     root, tools, workspace = resolve_paths(config,source)
     for managed in (root/'data', root/'config'):
-        if managed.is_symlink(): raise ValueError('namespace data/config parent cannot be a symlink')
+        if managed.is_symlink(): raise ValueError('domain data/config parent cannot be a symlink')
     compose = make_compose(config,root,tools,workspace)  # errors before touching output
     if check:
         return {'valid':True,'root':str(root),'hubs':len(config.hubs),'bridge':config.bridge.enabled}
@@ -274,15 +274,15 @@ def generate(source, check=False):
     workspace_created = not workspace.exists()
     workspace.mkdir(parents=True,exist_ok=True)
     if workspace_created and os.geteuid() == 0:
-        os.chown(workspace,config.namespace.uid,config.namespace.gid)
+        os.chown(workspace,config.domain.uid,config.domain.gid)
     templates = Environment(loader=FileSystemLoader(HERE),undefined=StrictUndefined,autoescape=False,keep_trailing_newline=True)
     templates.filters.update(yaml=yaml_text,dotenv=dotenv)
-    with root_lock(root), tempfile.TemporaryDirectory(prefix='.namespace-build-',dir=root) as tmp, tempfile.TemporaryDirectory(prefix='.toolsets-build-',dir=tools) as tooltmp:
+    with root_lock(root), tempfile.TemporaryDirectory(prefix='.domain-build-',dir=root) as tmp, tempfile.TemporaryDirectory(prefix='.toolsets-build-',dir=tools) as tooltmp:
         stage = Path(tmp); toolstage = Path(tooltmp)
-        manifest_path = root/'.namespace-generated.json'
+        manifest_path = root/'.domain-generated.json'
         previous = json.loads(manifest_path.read_text()) if manifest_path.exists() else {}
-        if previous and previous.get('namespace') != config.namespace.name:
-            raise ValueError('namespace root already belongs to another namespace')
+        if previous and previous.get('domain') != config.domain.name:
+            raise ValueError('domain root already belongs to another domain')
         actions = []; origins = {}; revisions = {}; kinds = {}
         for toolset in config.toolsets:
             origin, updated, rev = populate(toolset,root,tools,toolstage,source)
@@ -301,7 +301,7 @@ def generate(source, check=False):
             write(configs/hub.name/'toolhub.yaml',yaml_text(value))
             load_config(configs/hub.name/'toolhub.yaml',env=env_for(config,workspace,hub))
         router = hub_config(config)
-        router['remotes']=[{'path':'/'+h.name,'name':h.name,'url':'http://toolhub-'+config.namespace.name+'-'+h.name+':3000','tokenEnv':'TOOLHUB_AGENT_PASSWORD'} for h in config.hubs]
+        router['remotes']=[{'path':'/'+h.name,'name':h.name,'url':'http://toolhub-'+config.domain.name+'-'+h.name+':3000','tokenEnv':'TOOLHUB_AGENT_PASSWORD'} for h in config.hubs]
         write(configs/'_router_'/'toolhub.yaml',yaml_text(router))
         load_config(configs/'_router_'/'toolhub.yaml',env=env_for(config,workspace))
         actions.append((configs,root/'config'))
@@ -310,7 +310,7 @@ def generate(source, check=False):
             actions.append((stage/f'.env-{name}',root/f'.env-{name}'))
         generated_envs = ['.env-'+n for n in names]
         if config.bridge.enabled:
-            env = {'TOOLHUB_URL':'http://toolhub-'+config.namespace.name+':3000','TOOLHUB_AGENT_PASSWORD':config.namespace.agent_pass,
+            env = {'TOOLHUB_URL':'http://toolhub-'+config.domain.name+':3000','TOOLHUB_AGENT_PASSWORD':config.domain.agent_pass,
                    'TOOLHUB_MCP_TRANSPORT':'streamable-http','TOOLHUB_MCP_HOST':'0.0.0.0','TOOLHUB_MCP_PORT':'8000'}
             write(stage/'.env-_bridge_',templates.get_template('env.template').render(env=env),0o600)
             actions.append((stage/'.env-_bridge_',root/'.env-_bridge_')); generated_envs.append('.env-_bridge_')
@@ -322,8 +322,8 @@ def generate(source, check=False):
         if config.options.remove_unused_tools:
             retained = {name: kind for name, kind in retained.items() if kind == 'manual'}
         retained.update(kinds)
-        manifest = {'version':1,'namespace':config.namespace.name,'tools_root':str(tools),'toolsets':retained,'revisions':revisions,'env_files':generated_envs}
-        write(stage/'.namespace-generated.json',json.dumps(manifest,indent=2)+'\n')
+        manifest = {'version':1,'domain':config.domain.name,'tools_root':str(tools),'toolsets':retained,'revisions':revisions,'env_files':generated_envs}
+        write(stage/'.domain-generated.json',json.dumps(manifest,indent=2)+'\n')
         deletes = []
         for name in previous.get('env_files',[]):
             if Path(name).name != name or not name.startswith('.env-'): raise ValueError('invalid prior manifest')
@@ -332,14 +332,14 @@ def generate(source, check=False):
             for name, kind in previous.get('toolsets',{}).items():
                 if Path(name).name != name or name in ('.','..'): raise ValueError('invalid prior manifest')
                 if name not in kinds and kind != 'manual': deletes.append(tools/name)
-        actions.append((stage/'.namespace-generated.json',manifest_path))
+        actions.append((stage/'.domain-generated.json',manifest_path))
         # Databases survive all rebuilds; only create missing mount directories.
         for name in names:
             folder = root/'data'/name
             if folder.is_symlink(): raise ValueError('data directory cannot be symlink')
             if not folder.exists():
                 folder.mkdir(parents=True)
-                if os.geteuid() == 0: os.chown(folder,config.namespace.uid,config.namespace.gid)
+                if os.geteuid() == 0: os.chown(folder,config.domain.uid,config.domain.gid)
         publish(actions,deletes)
     return {'root':str(root),'compose':str(root/'compose.yaml'),'workers':len(config.hubs),'toolsets':len(config.toolsets)}
 
@@ -355,10 +355,10 @@ def main(argv=None):
     except ValidationError as exc:
         # Never print Pydantic input values; these may contain credentials.
         errors = [{'path':'.'.join(map(str,e['loc'])),'type':e['type']} for e in exc.errors(include_input=False)]
-        print('Invalid namespace: '+json.dumps(errors),file=sys.stderr)
+        print('Invalid domain: '+json.dumps(errors),file=sys.stderr)
         return 2
     except Exception as exc:
-        print(f'namespace build failed: {exc}',file=sys.stderr)
+        print(f'domain build failed: {exc}',file=sys.stderr)
         return 2
 
 if __name__ == '__main__':
