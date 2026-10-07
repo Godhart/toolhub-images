@@ -11,7 +11,7 @@ domain:
   admin_pass: replace-with-your-admin-password
   agent_pass: replace-with-your-agent-password
   seed_lang: ru
-  network: true                   # default external access; false keeps only domain communication
+  network: false                   # default external access; false keeps only domain communication # NOTE: enable network when testing for web access, disable in production to prevent unattened network access
   env: {}
   env_router: {}
   limits: {containers: 2, tmp: 512m, pids: 128, mem: 2g, cpu: 2.0}
@@ -25,10 +25,14 @@ bridge:
   port: 100                       # offset: MCP HTTP at 3400/mcp
 
 toolsets:
+  - name: essential
+    source_kind: git
+    tools_kind: twylt
+    data: {path: https://github.com/Godhart/twylt-pack-essential.git, ref: main, update: once}
   - name: filesystem
     source_kind: git
     tools_kind: twylt
-    data: {path: https://github.com/Godhart/twylt-pack-filesystem.git, ref: main, update: always}
+    data: {path: https://github.com/Godhart/twylt-pack-filesystem.git, ref: main, update: once}
   - name: git
     source_kind: git
     data: {path: https://github.com/Godhart/twylt-pack-git.git, ref: main, update: once}
@@ -41,9 +45,15 @@ toolsets:
   # docsanity has no suitable pack in its repository yet; deferred to next iteration.
 
 hubs:
+# TODO:
+#   - name: essential
+#     network: true
+#     image: toolhub-twylt:essential
+#     port: 1
+#     packs: [{toolset: essential, prefix: essential}]
   - name: filesystem
     image: toolhub-twylt:base
-    port: 1                       # omit/null to keep worker private inside Compose
+    port: 2                       # omit/null to keep worker private inside Compose
     kind: general
     network: false                # override the domain default for this worker
     env: {}
@@ -52,16 +62,17 @@ hubs:
       - toolset: filesystem
         prefix: filesystem
         exclude: []               # TWYLT names or relative file globs
-        toolpak_builder_kwargs: {glob: '**/tool.py', timeout_ms: 120000}
+        # toolpak_builder_kwargs: {glob: '**/tool.py', timeout_ms: 120000}
     mcps: []                      # nonempty values are rejected in this iteration
   - name: git
+    network: true
     image: toolhub-twylt:git
-    port: 2
+    port: 3
     packs: [{toolset: git, prefix: git}]
   - name: docker
     image: toolhub-twylt:docker
     kind: docker
-    port: 3
+    port: 4
     docker_socket: /var/run/docker.sock
     # docker_socket_gid: 998       # optional: otherwise stat() the socket on generation host
     docker_workspace: host-readonly # same absolute host path, read-only; no /workspace mount
