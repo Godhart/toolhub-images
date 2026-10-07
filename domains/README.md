@@ -19,7 +19,7 @@ cp domains/toolhub-domain-example.yaml domains/my.yaml
 chmod 600 domains/my.yaml
 python domains/build_domain.py domains/my.yaml --check
 python domains/build_domain.py domains/my.yaml
-./build.sh base git docker hdl mcp-bridge
+./build.sh base essential git docker hdl mcp-bridge
 # Используйте path из своего YAML; ниже путь из примера:
 docker compose -f domains/example/compose.yaml config --quiet
 docker compose -f domains/example/compose.yaml up -d
@@ -154,3 +154,31 @@ worker не подключается. `none` использует пустой `
 
 Вызовы внешних MCP-серверов из ToolHub пока не реализованы: непустой `mcps`
 отвергается. Docsanity оставлен вне рабочего примера до отдельной итерации.
+
+## Essential worker
+
+`toolhub-twylt:essential` содержит iputils-ping и Python зависимости
+[twylt-pack-essential](https://github.com/Godhart/twylt-pack-essential).
+Исходники шести инструментов по-прежнему подключаются из toolset через volume.
+Пути router: `/essential/essential/echo`, `/essential/essential/sleep`,
+`/essential/essential/wget`, `/essential/essential/curl`,
+`/essential/essential/ping`, `/essential/essential/web_search`.
+
+Пример включает для этого worker `network: true`. Для web_search задайте
+`hubs[].env.TWYLT_SEARXNG_URL` и включите JSON-формат в вашем SearXNG.
+SearXNG не устанавливается в образ. Системные wget/curl не требуются.
+
+Если ping возвращает permission denied, разрешите ICMP datagram sockets для
+GID worker через Compose sysctl. Например, отдельный override-файл:
+
+```yaml
+services:
+  toolhub-example-essential:
+    sysctls:
+      net.ipv4.ping_group_range: "1000 1000"
+```
+
+Подключайте его вторым `-f` после сгенерированного compose.yaml; диапазон должен
+соответствовать domain.gid. Этот вариант сохраняет cap_drop=ALL и
+no-new-privileges. Поведение зависит от ядра и контейнерного движка;
+проверка образа с таким sysctl — `tests/smoke-essential-image.sh <pack-dir> [docker|podman]`.

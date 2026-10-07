@@ -2,7 +2,7 @@
 set -eu
 engine=${1:-docker}
 root=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-for variant in base git docs hdl docsanity; do
+for variant in base essential git docs hdl docsanity; do
   "$engine" run --rm --network none --read-only --tmpfs /tmp:rw,mode=1777 \
     "toolhub-twylt:$variant" python -c 'import twylt, pydantic, yaml, tomli_w, markdown_it, charset_normalizer; print("Python OK")'
   "$engine" run --rm --network none --read-only --tmpfs /tmp:rw,mode=1777 \

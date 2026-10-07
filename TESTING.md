@@ -1,3 +1,15 @@
+# Essential image support
+
+- Upstream twylt-pack-essential revision 8f58765e068cce069b4e1d41a52b489ea30ff1cf:
+  17 unittest tests passed (local HTTP, mock ping, CLI and six contracts).
+- Native domain generation from real upstream files selected all six tools and
+  generated the essential worker using toolhub-twylt:essential.
+- Shell syntax and git diff --check passed. Docker/Podman are absent, so the image
+  build and real ICMP inside the container were not executed here.
+- After build.sh essential, run tests/smoke-essential-image.sh PACK_DIR [docker|podman]
+  to check mounted-tool discovery, echo/sleep and real loopback ping as UID/GID 1000
+  with capabilities dropped, no-new-privileges and the ICMP group sysctl.
+
 # Проверки 0.4.0 — domain
 
 - 52 passed: генерация и валидация domain, loader/SQLite, повторная сборка,

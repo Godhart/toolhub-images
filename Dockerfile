@@ -1,5 +1,5 @@
 # Docker / Podman; build context = this directory.
-# Targets: base (default), docker, git, docs, hdl, docsanity, mcp-bridge; alias okf.
+# Targets: base (default), essential, docker, git, docs, hdl, docsanity, mcp-bridge; alias okf.
 ARG NODE_IMAGE=node:22-bookworm-slim
 ARG BUN_IMAGE=oven/bun:1.4.2
 ARG PYTHON_IMAGE=python:3.11-slim-bookworm
@@ -75,6 +75,18 @@ WORKDIR /workspace
 USER 1000:1000
 ENTRYPOINT ["/usr/bin/tini", "--", "/usr/local/bin/container-entrypoint"]
 CMD ["toolhub"]
+
+# ---- Extended: essential TWYLT utilities ----
+# curl/wget are Python implementations; only ping needs an OS executable.
+# Tool sources remain mounted at /tools by the domain Compose configuration.
+FROM common AS essential
+USER root
+COPY --from=sources /sources/twylt-pack-essential/requirements.txt /opt/config/python-essential.txt
+RUN apt-get update && apt-get install -y --no-install-recommends iputils-ping \
+ && rm -rf /var/lib/apt/lists/* \
+ && pip install --no-cache-dir -r /opt/config/python-essential.txt \
+ && pip check && ping -V
+USER 1000:1000
 
 # Docker worker uses the SDK over a mounted socket; no Docker daemon in the image.
 FROM common AS docker

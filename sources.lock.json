@@ -32,6 +32,10 @@
     "toolpack-builder": {
       "url": "https://github.com/Godhart/toolpack-builder.git",
       "commit": "c6fc228fc07793edab2e138d876f18c02132f795"
+    },
+    "twylt-pack-essential": {
+      "url": "https://github.com/Godhart/twylt-pack-essential.git",
+      "commit": "8f58765e068cce069b4e1d41a52b489ea30ff1cf"
     }
   }
 }

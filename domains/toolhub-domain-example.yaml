@@ -4,7 +4,7 @@ domain:
   uid: 1000
   gid: 1000
   host: 127.0.0.1
-  port_base: 3300                 # router:3300, filesystem:3301, git:3302, docker:3303, hdl:3305
+  port_base: 3300                 # router:3300, essential:3301, filesystem:3302, git:3303, docker:3304, hdl:3305
   path: ./example
   tools: tools                    # bare relative path -> domain root
   workspace: workspace            # ./... -> YAML directory; absolute paths supported
@@ -45,12 +45,12 @@ toolsets:
   # docsanity has no suitable pack in its repository yet; deferred to next iteration.
 
 hubs:
-# TODO:
-#   - name: essential
-#     network: true
-#     image: toolhub-twylt:essential
-#     port: 1
-#     packs: [{toolset: essential, prefix: essential}]
+  - name: essential
+    network: true
+    image: toolhub-twylt:essential
+    port: 1
+    # For web_search set env: {TWYLT_SEARXNG_URL: 'http://your-searxng:8080'}
+    packs: [{toolset: essential, prefix: essential}]
   - name: filesystem
     image: toolhub-twylt:base
     port: 2                       # omit/null to keep worker private inside Compose

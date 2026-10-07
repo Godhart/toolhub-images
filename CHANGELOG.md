@@ -1,5 +1,7 @@
 # 0.4.0
 
+- Target essential: GitHub requirements и iputils-ping; build.sh и worker примера.
+
 - Domain/worker network defaults и overrides; внутренний router traffic сохраняется.
 
 - Domain YAML → toolsets, toolpacks, worker/router configs, env и Compose.

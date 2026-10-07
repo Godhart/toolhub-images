@@ -59,3 +59,10 @@ scripts/configure-toolhub.py на стадии сборки переводит S
 - [toolhub-mcp-bridge](https://github.com/Godhart/toolhub-mcp-bridge): самостоятельный image target, SHA в sources.lock.json.
 - `config-loader/` — интеграционный модуль из ранее подготовленного toolhub-config-loader 0.1.0; опубликованный upstream URL не был предоставлен. Он включён локально, вместе с тестами и минимальным REMOTE patch, без копии ToolHub. После публикации модуля его можно заменить закреплённой GitHub dependency.
 - Toolsets берутся из URL/ref domain YAML и подключаются volume; сторонние репозитории не включены в этот проект.
+
+## Essential runtime
+
+[twylt-pack-essential](https://github.com/Godhart/twylt-pack-essential), revision
+8f58765e068cce069b4e1d41a52b489ea30ff1cf, requirements installed in the essential
+image from the source-fetch stage. The source tree is not copied into runtime;
+it is supplied by the domain toolset volume.

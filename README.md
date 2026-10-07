@@ -23,6 +23,7 @@
 | Target | Состав |
 |---|---|
 | `base` (по умолчанию) | ToolHub + Bun 1.4.2, Node.js 22, Python 3.11, TWYLT Python 1.0.0, `@twylt/core` 0.2.3 из GitHub, TypeBox, Ajv, tsx, TypeScript и все зависимости twylt-pack-filesystem 0.5.0 |
+| `essential` | base + зависимости twylt-pack-essential и iputils-ping; echo, sleep, wget, curl, ping, web_search |
 | `docker` | base с Python Docker SDK, отдельный тег для Docker worker |
 | `mcp-bridge` | отдельный Python образ toolhub-mcp-bridge:base, HTTP MCP → router |
 | `git` | base + Git, SSH-клиент, HTTPS-сертификаты |
@@ -44,7 +45,7 @@ charset-normalizer. TOML читается встроенным tomllib из Pyth
 
 ```bash
 ./build.sh                          # все образы
-./build.sh base git docker hdl mcp-bridge
+./build.sh base essential git docker hdl mcp-bridge
 CONTAINER_ENGINE=podman ./build.sh base mcp-bridge
 ```
 
