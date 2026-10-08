@@ -7,7 +7,7 @@
     },
     "twylt": {
       "url": "https://github.com/Godhart/twylt.git",
-      "commit": "4de2805d73df81b4eadb405e0bca7fe8e5c0dbc5"
+      "commit": "bffdf247865b8e34f6c61f72327d869d8b4bd708"
     },
     "twylt-typescript": {
       "url": "https://github.com/Godhart/twylt-typescript.git",
@@ -35,7 +35,7 @@
     },
     "twylt-pack-essential": {
       "url": "https://github.com/Godhart/twylt-pack-essential.git",
-      "commit": "488e1a78f0400161884cd8034409b9d733880394"
+      "commit": "938da46801b931f1ee0a2c67fbeedcd82313a92c"
     }
   }
 }

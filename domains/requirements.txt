@@ -9,6 +9,6 @@ toolpack-builder @ git+https://github.com/Godhart/toolpack-builder.git@c6fc228fc
 hdl-order @ git+https://github.com/Godhart/hdl-order.git@70c46c0a58230148f0e3bd9d45eec8ba1acc18de
 # Filesystem discovery dependencies from the same pinned upstream used by the image.
 -r ../config/python-filesystem.txt
-# Managed runtime and shared HTTP implementation, matching sources.lock.json.
-twylt @ git+https://github.com/Godhart/twylt.git@4de2805d73df81b4eadb405e0bca7fe8e5c0dbc5
-twylt-pack-essential @ git+https://github.com/Godhart/twylt-pack-essential.git@488e1a78f0400161884cd8034409b9d733880394
+# Managed runtime, matching sources.lock.json.
+# Essential 0.3.0 is mounted as source (including shared/), not installed with pip.
+twylt @ git+https://github.com/Godhart/twylt.git@bffdf247865b8e34f6c61f72327d869d8b4bd708

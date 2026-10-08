@@ -36,7 +36,7 @@ COPY --from=sources /sources/twylt-pack-filesystem/requirements.txt /opt/config/
 # then the locked TWYLT source; never let legacy requirements downgrade the runtime.
 RUN pip install --no-cache-dir -r /opt/config/python-base.txt \
  && pip install --no-cache-dir /opt/twylt-source \
- && python -c 'import twylt, twylt.guardrails; assert twylt.__version__ == "1.1.0"' \
+ && python -c 'import twylt, twylt.guardrails; assert twylt.__version__ == "1.1.1"' \
  && rm -rf /opt/twylt-source
 COPY config/python-constraints.txt /opt/config/python-constraints.txt
 ENV PIP_CONSTRAINT=/opt/config/python-constraints.txt
@@ -85,15 +85,15 @@ CMD ["toolhub"]
 
 # ---- Extended: essential TWYLT utilities ----
 # curl/wget are Python implementations; only ping needs an OS executable.
-# Tool sources remain mounted at /tools by the domain Compose configuration.
+# Essential 0.3.0 is a source pack: install dependencies only.
+# The complete tools/shared tree is mounted at /tools by the domain Compose configuration.
 FROM common AS essential
 USER root
-COPY --from=sources /sources/twylt-pack-essential /opt/essential-source
+COPY --from=sources /sources/twylt-pack-essential/requirements.txt /opt/config/python-essential.txt
 RUN apt-get update && apt-get install -y --no-install-recommends iputils-ping \
  && rm -rf /var/lib/apt/lists/* \
- && pip install --no-cache-dir /opt/essential-source \
- && python -c 'import twylt_pack_essential.http' \
- && rm -rf /opt/essential-source \
+ && pip install --no-cache-dir -r /opt/config/python-essential.txt \
+ && python -c 'import importlib.util, twylt; assert twylt.__version__ == "1.1.1"; assert importlib.util.find_spec("twylt_pack_essential") is None' \
  && pip check && ping -V
 USER 1000:1000
 

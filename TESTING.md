@@ -1,3 +1,45 @@
+# Проверки toolhub-images 0.6.0
+
+Python 3.12, 2026-10-08. Основа: свежий GitHub clone toolhub-images 0.5.0,
+commit 321358b22b60020f196767f995599728041195f1.
+
+- 58 passed, 1 skipped: domain, guardrails, config-loader и optional native integration.
+  Сохранены прежние 57 проверок и добавлена HTTP-проверка сгенерированного domain launcher.
+- TWYLT 1.1.1, GitHub bffdf247865b8e34f6c61f72327d869d8b4bd708: 127 passed.
+- Essential 0.3.0, GitHub 938da46801b931f1ee0a2c67fbeedcd82313a92c: 22 passed.
+- TWYLT собран и установлен из свежего GitHub source в отдельное venv.
+  Essential не установлен как Python-дистрибутив. Установлены builder 0.4.1
+  и config-loader; pip check прошёл.
+- Генератор обнаруживает все шесть тулов, копирует shared/ вместе с tools/ и
+  формирует volume всего пака. Actual launcher curl выполняет локальный HTTP-запрос
+  из nested cwd вне workspace через input.json/output.json, с закрытым stdin.
+  Импорт старого twylt_pack_essential запрещён в процессе проверки.
+- Тот же launcher при TWYLT_DISABLE_NETWORK=1 возвращает код 6 и network_disabled.
+- Requirements essential 0.3.0 совместимы с constraint twylt==1.1.1:
+  pip dry-run с уже установленными зависимостями прошёл. Полный resolver всех
+  domains/requirements.txt повторно не запускался; прежние pins builder/HDL сохранены.
+- Shell syntax, Python syntax, git diff --check прошли.
+- Native router/worker/MCP: 1 skipped, нет подготовленного Bun/API.
+- Docker/Podman отсутствуют: сборка образов и контейнерный smoke не выполнялись.
+  Smoke обновлён: TWYLT 1.1.1, отсутствие установленного essential, mounted shared/,
+  локальный HTTP из nested cwd, loopback ICMP и describe всех шести тулов.
+  Реальный ICMP и внешний SearXNG в этой среде не проверены.
+
+Воспроизведение после установки domains/requirements.txt и config-loader:
+
+```bash
+ESSENTIAL_SOURCE_DIR=/absolute/essential-0.3.0 python -m pytest -q \
+  tests/test_domains.py tests/test_guardrails.py tests/test_domain_runtime.py \
+  config-loader/tests/test_loader.py
+./build.sh base essential
+sh tests/smoke-essential-image.sh /absolute/essential-0.3.0 docker
+```
+
+Без ESSENTIAL_SOURCE_DIR пропускаются два теста реального пака.
+Результаты старых релизов ниже сохранены как история.
+
+---
+
 # Проверки toolhub-images 0.5.0
 
 Подготовка на Python 3.12, 2026-10-08; основа — GitHub HEAD

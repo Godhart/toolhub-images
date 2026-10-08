@@ -1,4 +1,4 @@
-# Архитектурные решения — toolhub-images 0.5.0
+# Архитектурные решения — toolhub-images 0.6.0
 
 1. Один multi-stage Dockerfile, четыре target. git наследует base; docs и hdl
    наследуют git. Общие зависимости обновляются в одном месте.
@@ -70,3 +70,16 @@ granting NET_RAW or removing no-new-privileges.
 
 0.5.0 installs hdl-order base distribution instead of the TWYLT extra, which pins
 1.0.0. The managed 1.1.0 runtime supplies that dependency; upstream code is unchanged.
+
+## Дополнение 0.6.0 — essential как исходный пак
+
+- TWYLT 1.1.1 и essential 0.3.0 закреплены новыми GitHub SHA. Другие source pins сохранены.
+- Образ essential устанавливает только requirements.txt. Python-дистрибутив essentials
+  больше не нужен; удалены его установка, импорт-проверка и pin из constraints/host requirements.
+- Общая HTTP-логика живёт в shared/ essential. Весь toolset копируется генератором
+  и монтируется в раннер; каждый HTTP-тул вычисляет sys.path относительно __file__.
+  Это решение заменяет установку общего модуля из дополнения 0.5.0.
+- Не добавляем копию shared-кода в образ: единственный источник — подключённый пак.
+  Поэтому исходные tools/ и shared/ должны сохранять взаимное расположение.
+- Проверки выполняют настоящую HTTP-логику из сгенерированного launcher с nested cwd;
+  smoke дополнительно проверяет отсутствие установленного essential-дистрибутива.

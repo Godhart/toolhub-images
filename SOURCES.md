@@ -1,4 +1,4 @@
-# Источники 0.5.0
+# Источники 0.6.0
 
 Канонический список: https://github.com/Godhart/twylt/blob/main/RESOURCES.md
 Проект сборки: https://github.com/Godhart/toolhub-images
@@ -6,11 +6,13 @@
 | Проект | GitHub | Закреплённая ревизия |
 |---|---|---|
 | toolhub | [https://github.com/Talos-popcorn/toolhub](https://github.com/Talos-popcorn/toolhub) | `61c19ca0d3639545f5e7f8461b8998506a1592f7` |
-| twylt | [https://github.com/Godhart/twylt](https://github.com/Godhart/twylt) | `4de2805d73df81b4eadb405e0bca7fe8e5c0dbc5` |
+| twylt | [https://github.com/Godhart/twylt](https://github.com/Godhart/twylt) | `bffdf247865b8e34f6c61f72327d869d8b4bd708` |
 | twylt-typescript | [https://github.com/Godhart/twylt-typescript](https://github.com/Godhart/twylt-typescript) | `cd004855486e3cb485690fb5fb55b1cb0f03de42` |
 | twylt-pack-filesystem | [https://github.com/Godhart/twylt-pack-filesystem](https://github.com/Godhart/twylt-pack-filesystem) | `fa5daa98ed7dd066ea1e497b41132580a31b9c1e` |
 | hdl-order | [https://github.com/Godhart/hdl-order](https://github.com/Godhart/hdl-order) | `70c46c0a58230148f0e3bd9d45eec8ba1acc18de` |
 | docsanity | [https://github.com/Godhart/docsanity](https://github.com/Godhart/docsanity) | `0e53f00ee8006d0143f0357d01f491d406b51dbe` |
+
+| twylt-pack-essential | [https://github.com/Godhart/twylt-pack-essential](https://github.com/Godhart/twylt-pack-essential) | `938da46801b931f1ee0a2c67fbeedcd82313a92c` |
 
 В архиве нет исходников этих проектов. Dockerfile получает их стадией sources
 через scripts/fetch-sources.py. Загрузчик принимает только полные SHA, выполняет
@@ -60,12 +62,19 @@ scripts/configure-toolhub.py на стадии сборки переводит S
 - `config-loader/` — интеграционный модуль из ранее подготовленного toolhub-config-loader 0.1.0; опубликованный upstream URL не был предоставлен. Он включён локально, вместе с тестами и минимальным REMOTE patch, без копии ToolHub. После публикации модуля его можно заменить закреплённой GitHub dependency.
 - Toolsets берутся из URL/ref domain YAML и подключаются volume; сторонние репозитории не включены в этот проект.
 
-## Essential runtime
+## Essential runtime 0.6.0
 
-[twylt-pack-essential](https://github.com/Godhart/twylt-pack-essential), revision
-8f58765e068cce069b4e1d41a52b489ea30ff1cf, requirements installed in the essential
-image from the source-fetch stage. The source tree is not copied into runtime;
-it is supplied by the domain toolset volume.
+Essential 0.3.0: commit 938da46801b931f1ee0a2c67fbeedcd82313a92c.
+TWYLT 1.1.1: commit bffdf247865b8e34f6c61f72327d869d8b4bd708.
+Based on GitHub toolhub-images 0.5.0, commit 321358b22b60020f196767f995599728041195f1.
+All three repositories were freshly cloned from GitHub on 2026-10-08.
+
+Only essential's requirements.txt is copied into the runtime build; the essential
+Python package is not installed. Domain toolset staging and volumes retain the
+complete tools/shared source tree. The example toolset ref matches sources.lock.json.
+The managed constraint protects TWYLT 1.1.1; no essential distribution pin remains.
+Host dependencies no longer try to pip-install essential's source-only repository.
+Other source pins are unchanged.
 
 ## Guardrails rebase 0.5.0
 

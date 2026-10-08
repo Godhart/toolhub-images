@@ -183,17 +183,20 @@ services:
 no-new-privileges. Поведение зависит от ядра и контейнерного движка;
 проверка образа с таким sysctl — `tests/smoke-essential-image.sh <pack-dir> [docker|podman]`.
 
-## Guardrails — images 0.5.0
+## Guardrails — images 0.6.0
 
 Генератор добавляет TWYLT_GUARDRAILS=1, TWYLT_ALLOWED_CWD и TOOLHUB_RUN_ROOT
 по умолчанию /tmp/toolhub-runs. Подкаталоги разрешены; business workspace остаётся
 отдельным. Network policy также формирует общий TWYLT_DISABLE_NETWORK; не задавайте
 его вручную через env. Старый TWYLT_ESSENTIAL_DISABLE_NETWORK заменён общей переменной.
 
-Для essential нужен target essential: он устанавливает общий модуль 0.2.0.
-Повторно установите requirements.txt после обновления: host discovery тоже требует
-новых TWYLT и общего essential. Source toolset ref должен соответствовать версии
-модуля в образе: текущий lock essential — 488e1a78f0400161884cd8034409b9d733880394.
+Для essential нужен target essential: он устанавливает внешние зависимости 0.3.0
+и системный ping. Сам пак больше не собирается и не устанавливается через pip.
+Host discovery использует TWYLT 1.1.1 и весь source toolset, включая tools/ и shared/.
+Генератор копирует и монтирует оба каталога; PYTHONPATH настраивать не требуется.
+Уберите старый essential pin из своих Python constraints. Текущий ref essential:
+938da46801b931f1ee0a2c67fbeedcd82313a92c; такой же SHA закреплён в sources.lock.json.
+Обновите ref своего YAML, заново установите domains/requirements.txt и сгенерируйте domain.
 Сохранение update: once означает, что существующий checkout не обновится сам;
 задайте update: always для обновления либо укажите новый toolset source.
 

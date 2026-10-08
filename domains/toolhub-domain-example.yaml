@@ -28,7 +28,7 @@ toolsets:
   - name: essential
     source_kind: git
     tools_kind: twylt
-    data: {path: https://github.com/Godhart/twylt-pack-essential.git, ref: 488e1a78f0400161884cd8034409b9d733880394, update: always}
+    data: {path: https://github.com/Godhart/twylt-pack-essential.git, ref: 938da46801b931f1ee0a2c67fbeedcd82313a92c, update: always}
   - name: filesystem
     source_kind: git
     tools_kind: twylt

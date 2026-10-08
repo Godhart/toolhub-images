@@ -1,3 +1,2 @@
 # Managed Python runtime: source revisions are in sources.lock.json
-twylt==1.1.0
-twylt-pack-essential==0.2.0
+twylt==1.1.1

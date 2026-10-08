@@ -1,3 +1,11 @@
+# 0.6.0 — 2026-10-08
+
+- Pin GitHub TWYLT 1.1.1 and essential 0.3.0 in source lock and domain example.
+- Install only essential's external requirements, without building/installing the pack.
+- Remove the essential Python distribution from constraints and host dependencies.
+- Preserve the full tools/shared tree in domain volumes; imports use the tool's __file__.
+- Extend generated-launcher HTTP and container smoke checks; document migration.
+
 # 0.5.0 — 2026-10-08
 
 - Rebase guardrails integration on GitHub toolhub-images HEAD 622895c714225cec07e55260502fe238a70555db (0.4.0).
