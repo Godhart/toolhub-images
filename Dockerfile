@@ -25,14 +25,21 @@ ENV PATH="/opt/venv/bin:/opt/tool-runtime/node_modules/.bin:${PATH}" \
     PIP_DISABLE_PIP_VERSION_CHECK=1 NODE_ENV=production \
     DATABASE_URL=file:/data/hub.db PORT=3000 \
     HOME=/tmp/home XDG_CACHE_HOME=/tmp/cache \
-    NODE_PATH=/opt/tool-runtime/node_modules
+    NODE_PATH=/opt/tool-runtime/node_modules \
+    TWYLT_GUARDRAILS=1 TWYLT_WORKSPACE_ROOT=/workspace \
+    TWYLT_ALLOWED_CWD=/tmp/toolhub-runs TOOLHUB_RUN_ROOT=/tmp/toolhub-runs
 
 # ---- Python: core + filesystem toolpack dependencies ----
 COPY --from=sources /sources/twylt /opt/twylt-source
 COPY --from=sources /sources/twylt-pack-filesystem/requirements.txt /opt/config/python-base.txt
-RUN pip install --no-cache-dir /opt/twylt-source \
- && pip install --no-cache-dir -r /opt/config/python-base.txt \
+# Legacy filesystem requirements pin TWYLT 1.0.0. Install dependencies first,
+# then the locked TWYLT source; never let legacy requirements downgrade the runtime.
+RUN pip install --no-cache-dir -r /opt/config/python-base.txt \
+ && pip install --no-cache-dir /opt/twylt-source \
+ && python -c 'import twylt, twylt.guardrails; assert twylt.__version__ == "1.1.0"' \
  && rm -rf /opt/twylt-source
+COPY config/python-constraints.txt /opt/config/python-constraints.txt
+ENV PIP_CONSTRAINT=/opt/config/python-constraints.txt
 # Python Docker SDK and the configuration loader are available in every Hub image.
 COPY config-loader /opt/config-loader
 RUN pip install --no-cache-dir 'docker>=7,<8' /opt/config-loader
@@ -81,10 +88,12 @@ CMD ["toolhub"]
 # Tool sources remain mounted at /tools by the domain Compose configuration.
 FROM common AS essential
 USER root
-COPY --from=sources /sources/twylt-pack-essential/requirements.txt /opt/config/python-essential.txt
+COPY --from=sources /sources/twylt-pack-essential /opt/essential-source
 RUN apt-get update && apt-get install -y --no-install-recommends iputils-ping \
  && rm -rf /var/lib/apt/lists/* \
- && pip install --no-cache-dir -r /opt/config/python-essential.txt \
+ && pip install --no-cache-dir /opt/essential-source \
+ && python -c 'import twylt_pack_essential.http' \
+ && rm -rf /opt/essential-source \
  && pip check && ping -V
 USER 1000:1000
 
@@ -118,7 +127,7 @@ USER root
 COPY --from=sources /sources/hdl-order /opt/hdl-order-source
 RUN apt-get update && apt-get install -y --no-install-recommends graphviz \
  && rm -rf /var/lib/apt/lists/* \
- && pip install --no-cache-dir '/opt/hdl-order-source[twylt]' \
+ && pip install --no-cache-dir /opt/hdl-order-source \
  && pip check && hdl-order --help \
  && rm -rf /opt/hdl-order-source
 USER 1000:1000
@@ -145,7 +154,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends tini ca-certifi
  && rm -rf /var/lib/apt/lists/*
 COPY --from=sources /sources/toolhub-mcp-bridge /opt/toolhub-mcp-bridge
 RUN pip install --no-cache-dir /opt/toolhub-mcp-bridge && toolhub-mcp --help
-ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 HOME=/tmp \
+ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 HOME=/tmp TWYLT_GUARDRAILS=1 \
     TOOLHUB_MCP_TRANSPORT=streamable-http TOOLHUB_MCP_HOST=0.0.0.0 TOOLHUB_MCP_PORT=8000
 USER 1000:1000
 EXPOSE 8000

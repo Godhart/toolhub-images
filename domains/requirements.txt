@@ -5,6 +5,10 @@ Jinja2>=3,<4
 docker>=7,<8
 toolpack-builder @ git+https://github.com/Godhart/toolpack-builder.git@c6fc228fc07793edab2e138d876f18c02132f795
 # Needed when probing HDL tools on the host.
-hdl-order[twylt] @ git+https://github.com/Godhart/hdl-order.git@70c46c0a58230148f0e3bd9d45eec8ba1acc18de
+# The TWYLT extra pins 1.0.0; managed TWYLT is installed separately below.
+hdl-order @ git+https://github.com/Godhart/hdl-order.git@70c46c0a58230148f0e3bd9d45eec8ba1acc18de
 # Filesystem discovery dependencies from the same pinned upstream used by the image.
--r https://raw.githubusercontent.com/Godhart/twylt-pack-filesystem/fa5daa98ed7dd066ea1e497b41132580a31b9c1e/requirements.txt
+-r ../config/python-filesystem.txt
+# Managed runtime and shared HTTP implementation, matching sources.lock.json.
+twylt @ git+https://github.com/Godhart/twylt.git@4de2805d73df81b4eadb405e0bca7fe8e5c0dbc5
+twylt-pack-essential @ git+https://github.com/Godhart/twylt-pack-essential.git@488e1a78f0400161884cd8034409b9d733880394

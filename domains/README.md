@@ -182,3 +182,28 @@ services:
 соответствовать domain.gid. Этот вариант сохраняет cap_drop=ALL и
 no-new-privileges. Поведение зависит от ядра и контейнерного движка;
 проверка образа с таким sysctl — `tests/smoke-essential-image.sh <pack-dir> [docker|podman]`.
+
+## Guardrails — images 0.5.0
+
+Генератор добавляет TWYLT_GUARDRAILS=1, TWYLT_ALLOWED_CWD и TOOLHUB_RUN_ROOT
+по умолчанию /tmp/toolhub-runs. Подкаталоги разрешены; business workspace остаётся
+отдельным. Network policy также формирует общий TWYLT_DISABLE_NETWORK; не задавайте
+его вручную через env. Старый TWYLT_ESSENTIAL_DISABLE_NETWORK заменён общей переменной.
+
+Для essential нужен target essential: он устанавливает общий модуль 0.2.0.
+Повторно установите requirements.txt после обновления: host discovery тоже требует
+новых TWYLT и общего essential. Source toolset ref должен соответствовать версии
+модуля в образе: текущий lock essential — 488e1a78f0400161884cd8034409b9d733880394.
+Сохранение update: once означает, что существующий checkout не обновится сам;
+задайте update: always для обновления либо укажите новый toolset source.
+
+Для legacy-пака, который требует cwd в workspace, можно отдельно настроить worker:
+
+```yaml
+env:
+  TOOLHUB_RUN_ROOT: /workspace/.toolhub-runs
+```
+
+В таком случае генератор задаёт тот же TWYLT_ALLOWED_CWD. Каталог должен быть
+доступен на запись worker; readonly Docker workspace этому условию не соответствует.
+Миграция legacy-паков не включена в этот images release.

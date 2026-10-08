@@ -1,3 +1,38 @@
+# Проверки toolhub-images 0.5.0
+
+Подготовка на Python 3.12, 2026-10-08; основа — GitHub HEAD
+622895c714225cec07e55260502fe238a70555db (проверен повторно перед выпуском).
+
+- 57 passed: исходные тесты domains/loader и 6 новых проверок policy/transport,
+  включая реальный файловый запуск из вложенного cwd и discovery всех шести
+  инструментов essential из GitHub checkout 488e1a78f0400161884cd8034409b9d733880394.
+- TWYLT GitHub 4de2805d73df81b4eadb405e0bca7fe8e5c0dbc5: 116 passed.
+- HDL GitHub 70c46c0a58230148f0e3bd9d45eec8ba1acc18de: 23 TWYLT tests passed
+  с отдельно установленным TWYLT 1.1.0, без старого extra.
+- Essential GitHub 488e1a78f0400161884cd8034409b9d733880394: 20 passed.
+- configure-toolhub.py применён к свежему checkout закреплённого ToolHub:
+  адаптации schema/seed и новый TOOLHUB_RUN_ROOT применяются без ошибок.
+- Зависимости filesystem сверены с закреплённым GitHub source: удалён только
+  старый managed TWYLT pin, все остальные требования идентичны.
+- Полная pip dry-run resolution domains/requirements.txt из закреплённых GitHub
+  ревизий проходит: TWYLT 1.1.0 и essential 0.2.0 сохраняются без конфликтов.
+- Shell syntax всех скриптов и git diff --check: passed.
+- Native router/worker/MCP integration: 1 skipped (нет подготовленного Bun/API).
+- Docker/Podman отсутствуют: image build, сетевой runtime и реальный ICMP в
+  контейнере не проверены. Обновлён smoke-essential-image.sh для nested cwd.
+
+Воспроизведение (после установки domains/requirements.txt и config-loader):
+
+```bash
+ESSENTIAL_SOURCE_DIR=/absolute/pinned-essential python -m pytest -q \
+  tests/test_domains.py tests/test_guardrails.py config-loader/tests/test_loader.py
+# Без ESSENTIAL_SOURCE_DIR только реальный upstream discovery test будет skipped.
+# После build.sh essential:
+sh tests/smoke-essential-image.sh /absolute/pinned-essential docker
+```
+
+Результаты предыдущих версий ниже сохранены как история, а не как проверки 0.5.0.
+
 # Essential image support
 
 - Upstream twylt-pack-essential revision 8f58765e068cce069b4e1d41a52b489ea30ff1cf:

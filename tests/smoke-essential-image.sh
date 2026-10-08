@@ -10,7 +10,7 @@ chmod 777 "$workspace"
   --tmpfs /tmp:rw,mode=1777 --cap-drop ALL --security-opt no-new-privileges \
   --sysctl 'net.ipv4.ping_group_range=1000 1000' \
   -v "$pack:/tools/essential:ro" -v "$workspace:/workspace" \
-  -e TWYLT_WORKSPACE_ROOT=/workspace -e TWYLT_ESSENTIAL_DISABLE_NETWORK=0 \
+  -e TWYLT_WORKSPACE_ROOT=/workspace -e TWYLT_GUARDRAILS=1 -e TWYLT_DISABLE_NETWORK=0 \
   toolhub-twylt:essential python - <<'PY'
 import json, subprocess, sys
 from pathlib import Path
@@ -26,5 +26,12 @@ for name in ['echo','sleep','wget','curl','ping','web_search']:
 assert call('echo',{'text':'essential smoke'})=={'text':'essential smoke'}
 assert call('sleep',{'seconds':0})['requested_seconds']==0
 assert call('ping',{'host':'127.0.0.1','count':1,'timeout':5})['reachable']
+# Real file transport in a nested cwd outside /workspace.
+cwd = Path('/tmp/toolhub-runs/smoke/nested'); cwd.mkdir(parents=True)
+(cwd/'input.json').write_text('{"text":"nested cwd"}')
+result = subprocess.run([sys.executable,'/tools/essential/tools/echo/run.py'],
+                        cwd=cwd,stdin=subprocess.DEVNULL,capture_output=True,text=True,timeout=15)
+assert result.returncode == 0,result.stderr
+assert json.loads((cwd/'output.json').read_text()) == {'text':'nested cwd'}
 print('Essential image smoke passed')
 PY

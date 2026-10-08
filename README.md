@@ -1,4 +1,4 @@
-# ToolHub TWYLT Container Images 0.4.0
+# ToolHub TWYLT Container Images 0.5.0
 
 Образы Docker/Podman для ToolHub и запуска TWYLT-тулов с хоста.
 Один Dockerfile содержит варианты ToolHub и отдельный target MCP bridge.
@@ -22,14 +22,14 @@
 
 | Target | Состав |
 |---|---|
-| `base` (по умолчанию) | ToolHub + Bun 1.4.2, Node.js 22, Python 3.11, TWYLT Python 1.0.0, `@twylt/core` 0.2.3 из GitHub, TypeBox, Ajv, tsx, TypeScript и все зависимости twylt-pack-filesystem 0.5.0 |
-| `essential` | base + зависимости twylt-pack-essential и iputils-ping; echo, sleep, wget, curl, ping, web_search |
+| `base` (по умолчанию) | ToolHub + Bun 1.4.2, Node.js 22, Python 3.11, TWYLT Python 1.1.0, `@twylt/core` 0.2.3 из GitHub, TypeBox, Ajv, tsx, TypeScript и все зависимости twylt-pack-filesystem 0.5.0 |
+| `essential` | base + установленный общий модуль twylt-pack-essential 0.2.0 и iputils-ping; echo, sleep, wget, curl, ping, web_search |
 | `docker` | base с Python Docker SDK, отдельный тег для Docker worker |
 | `mcp-bridge` | отдельный Python образ toolhub-mcp-bridge:base, HTTP MCP → router |
 | `git` | base + Git, SSH-клиент, HTTPS-сертификаты |
 | `docs` | git + MkDocs/Material, Sphinx/MyST, Pandoc, Graphviz, Doxygen, TypeDoc, markdownlint-cli2, python-docx, openpyxl, python-pptx, pypdf, ReportLab, Pillow; XeLaTeX и кириллица |
 | `docsanity` (`okf` — псевдоним) | docs + docsanity / OKF Workspace 0.2.0 и @copperbox/okf-mcp 2.1.0; TWYLT-адаптер в tools/ для подключения через volume |
-| `hdl` | git + hdl-order 0.7.0 с extra `twylt`, VUnit HDL 4.7.1, Graphviz |
+| `hdl` | git + hdl-order 0.7.0 с отдельно установленным TWYLT 1.1.0, VUnit HDL 4.7.1, Graphviz |
 
 `docs` предназначен для Markdown/RST/API-документации, сайтов и PDF через XeLaTeX,
 а также программной генерации DOCX/XLSX/PPTX. LibreOffice, Chromium и Mermaid CLI
@@ -175,8 +175,9 @@ tsx в образе умеет исполнять его без предвари
 
 Раннеры используют `python tool.py < /dev/null` и `tsx tool.mts < /dev/null`.
 Они читают вход через input.json, результат — output.json. Закрытый stdin
-предотвращает известное ожидание EOF. Сами раннеры ToolHub создают временный cwd,
-поэтому используйте абсолютные пути `/workspace/...` в параметрах файловых тулов.
+предотвращает известное ожидание EOF. Раннеры ToolHub создают временный cwd внутри TOOLHUB_RUN_ROOT. Бизнес-пути
+определяются соответствующим паком и не должны вычисляться из cwd. В essential
+0.2.0 `/file` и `file` обозначают файл относительно TWYLT_WORKSPACE_ROOT.
 Предустановка библиотек не означает автоматическую регистрацию или импорт пака.
 
 ## Одноразовый запуск без сети
@@ -237,3 +238,62 @@ sh tests/smoke-images.sh docker
 CLI, hdl-order и старт сервера с read-only rootfs, без сети, с временной базой.
 Результаты проверок, выполненных при подготовке, и ограничения — в TESTING.md.
 Решения — ADR.md; происхождение исходников и изменения — SOURCES.md.
+
+## Guardrails и миграция 0.5.0
+
+Основа этой версии — последняя ветка GitHub toolhub-images на момент подготовки:
+commit `622895c714225cec07e55260502fe238a70555db` (README 0.4.0).
+Структура sources.lock.json и сборочная стадия GitHub сохранены; vendor/ не возвращён.
+Исходники TWYLT 1.1.0 и essential 0.2.0 также получены из GitHub и закреплены SHA.
+Новая версия supersedes прежний комплект toolhub-images 0.3.0 из этого рефакторинга,
+который ошибочно основывался на сохранённой 0.2.0. Не переносите оттуда vendor/.
+
+В каждом ToolHub target по умолчанию:
+
+```dotenv
+TWYLT_GUARDRAILS=1
+TWYLT_WORKSPACE_ROOT=/workspace
+TWYLT_ALLOWED_CWD=/tmp/toolhub-runs
+TOOLHUB_RUN_ROOT=/tmp/toolhub-runs
+TWYLT_DISABLE_NETWORK=0
+```
+
+TOOLHUB_RUN_ROOT определяет корень создаваемых ToolHub каталогов выполнения.
+TWYLT_ALLOWED_CWD разрешает этот корень и подкаталоги любой глубины для файлового
+транспорта. Это не второй корень бизнес-доступа: бизнес-пути остаются в workspace.
+Проверка транспорта принадлежит TWYLT и выполняется до удаления старого результата,
+чтения input.json и записи output.json. Guardrails — типовой контроль от ошибок и
+неосторожного применения; автор тула обязан применять API, произвольные операции
+контролируются ОС. Подробности — docs/GUARDRAILS.md в TWYLT 1.1.0.
+
+Генератор domain добавляет эти параметры worker/router. TWYLT_DISABLE_NETWORK
+вычисляется из domain.network и override конкретного worker; прямое переопределение
+через env запрещено. Сетевая политика контейнера и отдельный параметр Docker child
+сохраняются. Опциональный TWYLT_GUARDRAILS можно явно выключить через env.
+Для собственного cwd задайте TOOLHUB_RUN_ROOT или TWYLT_ALLOWED_CWD: если указан
+только один, генератор использует его для обоих. Если указаны оба, run root должен
+лежать внутри allowed cwd. Для standalone задайте согласованную пару самостоятельно.
+
+Essential 0.2.0 требует установленного модуля twylt_pack_essential.http, поэтому
+образ essential устанавливает весь Python-пакет из GitHub source, а tools остаются
+в volume. Python constraint защищает TWYLT 1.1.0 от последующего отката. Старые
+requirements файлового пака ставятся до обновлённого TWYLT; host domain dependencies
+используют те же требования без старого twylt==1.0.0 и отдельные закреплённые runtime.
+Конфликтующая версия в python-extra теперь вызовет ошибку сборки вместо отката.
+
+Паки filesystem/Git/Docker и TypeScript в этой версии не мигрируются. Их собственные
+встроенные проверки сохраняются; они могут требовать cwd внутри workspace независимо
+от новой переменной. Для такого worker задайте TOOLHUB_RUN_ROOT внутри его доступного
+workspace (например /workspace/.toolhub-runs для обычного worker) до миграции пака.
+Это не отменяет readonly режима Docker workspace. Не предполагается, что новый флаг
+автоматически управляет встроенными guardrails старых тулов.
+
+Обновление: замените файлы images этим комплектом; используйте свежий каталог, без
+vendor/ и .sources из старых сборок. Установите domains/requirements.txt и config-loader,
+повторно запустите генератор domain, затем build.sh и docker compose up -d --force-recreate
+с полученным compose.yaml. Сохраните свой YAML, пароли, data и workspace. Docker сборка
+и контейнерный smoke в среде подготовки не запускались; результаты — TESTING.md.
+
+HDL target и host dependencies устанавливают hdl-order без extra twylt, потому что
+этот extra закрепляет старый TWYLT 1.0.0. TWYLT 1.1.0 уже установлен отдельно;
+HDL-бизнес-код и исходные tool-контракты этим изменением не редактируются.

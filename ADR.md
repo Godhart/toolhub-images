@@ -1,4 +1,4 @@
-# Архитектурные решения — 0.1.0
+# Архитектурные решения — toolhub-images 0.5.0
 
 1. Один multi-stage Dockerfile, четыре target. git наследует base; docs и hdl
    наследуют git. Общие зависимости обновляются в одном месте.
@@ -54,3 +54,19 @@ name. It installs pinned upstream requirements and iputils-ping. Python handles
 curl/wget; SearXNG remains an external configured service. Tool files stay in
 volumes. Ping can use ICMP datagram sockets through ping_group_range without
 granting NET_RAW or removing no-new-privileges.
+
+## Дополнение 0.5.0 — централизованные guardrails
+
+- Generic policy belongs to locked GitHub TWYLT 1.1.0; shared HTTP logic belongs
+  to essential 0.2.0. Image integration does not embed copies of either implementation.
+- All Hub targets inherit enabled defaults; MCP facade carries the flag but does
+  not execute local TWYLT tools. Its behavior is unchanged.
+- ToolHub run directories use a configurable root; allowed cwd includes descendants
+  without expanding the business workspace. Domain configuration carries these defaults.
+- Requirements from older packs cannot downgrade managed TWYLT. Host dependencies
+  retain all other locked filesystem requirements; updates must follow sources.lock.json.
+- This is an images-only migration. Legacy pack-specific policy and TypeScript stay
+  unchanged; OS enforcement and tool-author responsibility remain distinct.
+
+0.5.0 installs hdl-order base distribution instead of the TWYLT extra, which pins
+1.0.0. The managed 1.1.0 runtime supplies that dependency; upstream code is unchanged.

@@ -96,6 +96,10 @@ def env_for(config, workspace, hub=None):
     result.update(WORKSPACE_HOST_PATH=str(workspace), TOOLHUB_ADMIN_PASSWORD=domain.admin_pass,
                   TOOLHUB_AGENT_PASSWORD=domain.agent_pass, TOOLHUB_SEED_LANG=domain.seed_lang,
                   TOOLHUB_CONFIG='/config/toolhub.yaml', DATABASE_URL='file:/data/hub.db', PORT='3000')
+    result.setdefault('TWYLT_GUARDRAILS','1')
+    result.setdefault('TOOLHUB_RUN_ROOT',result.get('TWYLT_ALLOWED_CWD','/tmp/toolhub-runs'))
+    result.setdefault('TWYLT_ALLOWED_CWD',result['TOOLHUB_RUN_ROOT'])
+    result['TWYLT_DISABLE_NETWORK'] = 'false' if network_enabled(config,hub) else 'true'
     if hub:
         if hub.kind == 'docker':
             result['TWYLT_WORKSPACE_ROOT'] = str(workspace) if hub.docker_workspace == 'host-readonly' else '/tmp/docker-workspace'

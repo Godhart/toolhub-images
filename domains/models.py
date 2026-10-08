@@ -184,7 +184,7 @@ class Config(Strict):
                 if key in {'TOOLHUB_CONFIG','TOOLHUB_CONFIG_MODE','DATABASE_URL','PORT',
                            'TOOLHUB_ADMIN_PASSWORD','TOOLHUB_AGENT_PASSWORD','TOOLHUB_AGENT_SECRET',
                            'TOOLHUB_URL','WORKSPACE_HOST_PATH','TWYLT_WORKSPACE_ROOT','DOCKER_HOST',
-                           'TWYLT_DOCKER_MAX_CONTAINERS','TWYLT_DOCKER_DISABLE_NETWORK'}:
+                           'TWYLT_DOCKER_MAX_CONTAINERS','TWYLT_DOCKER_DISABLE_NETWORK','TWYLT_DISABLE_NETWORK'}:
                     raise ValueError('environment key is owned by domain generator')
                 if any(c in str(value) for c in '\r\n\x00'):
                     raise ValueError('multiline environment values are not supported')

@@ -20,3 +20,8 @@ old = 'Admin: ${adminPassword}, Agent: ${agentSecret}'
 if text.count(old) != 2:
     raise RuntimeError("Upstream credential logging changed; review seed adaptation")
 seed.write_text(text.replace(old, 'credentials configured'))
+
+# Separate runner cwd subtree from business workspace; mkdir remains recursive.
+replace_once(root / "apps/api/src/index.ts",
+    "path.join(os.tmpdir(), `hub_run_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`)",
+    "path.join(process.env.TOOLHUB_RUN_ROOT || os.tmpdir(), `hub_run_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`)")

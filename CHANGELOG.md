@@ -1,3 +1,14 @@
+# 0.5.0 — 2026-10-08
+
+- Rebase guardrails integration on GitHub toolhub-images HEAD 622895c714225cec07e55260502fe238a70555db (0.4.0).
+- Preserve GitHub source stage, no vendor, all image targets, domain/config-loader and MCP bridge.
+- Pin GitHub TWYLT 1.1.0 and essential 0.2.0; install the shared essential Python module.
+- Enable cooperative policy defaults; support nested runner cwd separately from business workspace.
+- Map domain network policy to TWYLT_DISABLE_NETWORK; retain Docker/network controls.
+- Install HDL backend without its legacy TWYLT extra; use managed TWYLT.
+- Prevent dependency downgrade to TWYLT 1.0.0 in image and host domain environment.
+- Add domain/transport tests and extend essential image smoke.
+
 # 0.4.0
 
 - Target essential: GitHub requirements и iputils-ping; build.sh и worker примера.

@@ -187,3 +187,9 @@ python tests/test_okf_adapter.py
 и передавайте dependency-manifest JSON в dependencies_import_prepare. Сохраняются
 ограничения OKF 0.2.0: нет автоматического merge внешних правок, автогенерации
 текста моделью или автоматической оценки инженерной полноты документа.
+
+## Совместимость с images 0.5.0
+
+Targets docsanity и alias okf сохранены. Python TWYLT обновлён до 1.1.0;
+общие defaults guardrails/cwd наследуются от common. Сам docsanity upstream
+и его Node-зависимости не менялись. Смотрите README.md и TESTING.md версии 0.5.0.

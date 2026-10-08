@@ -1,4 +1,4 @@
-# Источники 0.3.0
+# Источники 0.5.0
 
 Канонический список: https://github.com/Godhart/twylt/blob/main/RESOURCES.md
 Проект сборки: https://github.com/Godhart/toolhub-images
@@ -6,7 +6,7 @@
 | Проект | GitHub | Закреплённая ревизия |
 |---|---|---|
 | toolhub | [https://github.com/Talos-popcorn/toolhub](https://github.com/Talos-popcorn/toolhub) | `61c19ca0d3639545f5e7f8461b8998506a1592f7` |
-| twylt | [https://github.com/Godhart/twylt](https://github.com/Godhart/twylt) | `6df2b0c9880adeb4296d74eb1e8d1e390744ccfd` |
+| twylt | [https://github.com/Godhart/twylt](https://github.com/Godhart/twylt) | `4de2805d73df81b4eadb405e0bca7fe8e5c0dbc5` |
 | twylt-typescript | [https://github.com/Godhart/twylt-typescript](https://github.com/Godhart/twylt-typescript) | `cd004855486e3cb485690fb5fb55b1cb0f03de42` |
 | twylt-pack-filesystem | [https://github.com/Godhart/twylt-pack-filesystem](https://github.com/Godhart/twylt-pack-filesystem) | `fa5daa98ed7dd066ea1e497b41132580a31b9c1e` |
 | hdl-order | [https://github.com/Godhart/hdl-order](https://github.com/Godhart/hdl-order) | `70c46c0a58230148f0e3bd9d45eec8ba1acc18de` |
@@ -66,3 +66,22 @@ scripts/configure-toolhub.py на стадии сборки переводит S
 8f58765e068cce069b4e1d41a52b489ea30ff1cf, requirements installed in the essential
 image from the source-fetch stage. The source tree is not copied into runtime;
 it is supplied by the domain toolset volume.
+
+## Guardrails rebase 0.5.0
+
+Repository baseline: https://github.com/Godhart/toolhub-images,
+commit 622895c714225cec07e55260502fe238a70555db (GitHub HEAD, README 0.4.0).
+No old release archives or vendored upstream sources were used as this release's base.
+
+- TWYLT 1.1.0: GitHub commit 4de2805d73df81b4eadb405e0bca7fe8e5c0dbc5.
+- Essential 0.2.0: GitHub commit 488e1a78f0400161884cd8034409b9d733880394.
+- Other sources and their pinned commits remain unchanged from repository baseline.
+- ToolHub adaptation additionally changes runner cwd root to TOOLHUB_RUN_ROOT.
+- config/python-filesystem.txt copies dependencies from pinned filesystem requirements
+  fa5daa98ed7dd066ea1e497b41132580a31b9c1e, excluding only the managed twylt==1.0.0 pin.
+  Original requirement file remains downloaded for image stage; TWYLT installs last.
+- Core pins in domains/requirements.txt must track sources.lock.json and constraints.
+- No upstream copies are added to this archive. GitHub fetch is required during build.
+
+0.5.0 installs hdl-order base distribution instead of the TWYLT extra, which pins
+1.0.0. The managed 1.1.0 runtime supplies that dependency; upstream code is unchanged.
