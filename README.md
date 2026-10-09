@@ -1,4 +1,4 @@
-# ToolHub TWYLT Container Images 0.6.0
+# ToolHub TWYLT Container Images 0.7.0
 
 Образы Docker/Podman для ToolHub и запуска TWYLT-тулов с хоста.
 Один Dockerfile содержит варианты ToolHub и отдельный target MCP bridge.
@@ -22,14 +22,14 @@
 
 | Target | Состав |
 |---|---|
-| `base` (по умолчанию) | ToolHub + Bun 1.4.2, Node.js 22, Python 3.11, TWYLT Python 1.1.1, `@twylt/core` 0.2.3 из GitHub, TypeBox, Ajv, tsx, TypeScript и все зависимости twylt-pack-filesystem 0.5.0 |
+| `base` (по умолчанию) | ToolHub + Bun 1.4.2, Node.js 22, Python 3.11, TWYLT Python 1.1.1, `@twylt/core` 0.2.3 из GitHub, TypeBox, Ajv, tsx, TypeScript и все зависимости twylt-pack-filesystem 0.6.0 |
 | `essential` | base + зависимости twylt-pack-essential 0.3.0 и iputils-ping; tools/ и shared/ монтируются целиком; echo, sleep, wget, curl, ping, web_search |
 | `docker` | base с Python Docker SDK, отдельный тег для Docker worker |
 | `mcp-bridge` | отдельный Python образ toolhub-mcp-bridge:base, HTTP MCP → router |
 | `git` | base + Git, SSH-клиент, HTTPS-сертификаты |
 | `docs` | git + MkDocs/Material, Sphinx/MyST, Pandoc, Graphviz, Doxygen, TypeDoc, markdownlint-cli2, python-docx, openpyxl, python-pptx, pypdf, ReportLab, Pillow; XeLaTeX и кириллица |
 | `docsanity` (`okf` — псевдоним) | docs + docsanity / OKF Workspace 0.2.0 и @copperbox/okf-mcp 2.1.0; TWYLT-адаптер в tools/ для подключения через volume |
-| `hdl` | git + hdl-order 0.7.0 с отдельно установленным TWYLT 1.1.1, VUnit HDL 4.7.1, Graphviz |
+| `hdl` | git + hdl-order 0.8.0 с отдельно установленным TWYLT 1.1.1, VUnit HDL 4.7.1, Graphviz |
 
 `docs` предназначен для Markdown/RST/API-документации, сайтов и PDF через XeLaTeX,
 а также программной генерации DOCX/XLSX/PPTX. LibreOffice, Chromium и Mermaid CLI
@@ -199,7 +199,7 @@ docker run --rm --network none \
 Для файлового режима положите input.json в workspace и закройте stdin.
 Пример hdl-order: аналогичный запуск образа `:hdl` с командой
 `hdl-order --help`, либо `python /tools/hdl-order/tools/hdl-order/run.py ...`.
-TWYLT-обёртки hdl-order берутся из архива 0.7.0/volume; библиотека уже установлена.
+TWYLT-обёртки hdl-order берутся из GitHub toolset 0.8.0/volume; библиотека уже установлена.
 
 Dockerfile не может запретить сеть: это параметр запуска. `--network none`
 отключает внешнюю сеть, но не loopback. С ним опубликованный HTTP-порт ToolHub
@@ -239,12 +239,13 @@ CLI, hdl-order и старт сервера с read-only rootfs, без сети
 Результаты проверок, выполненных при подготовке, и ограничения — в TESTING.md.
 Решения — ADR.md; происхождение исходников и изменения — SOURCES.md.
 
-## Guardrails и миграция 0.6.0
+## Guardrails и миграция 0.7.0
 
-Основа — GitHub toolhub-images 0.5.0, commit
-`321358b22b60020f196767f995599728041195f1`. TWYLT 1.1.1 и essential 0.3.0
-получены из GitHub и закреплены полными SHA в sources.lock.json и domain example.
-Другие источники сохраняют прежние ревизии.
+Основа — свежий GitHub toolhub-images 0.6.0, commit `f00fd8678dfd5da029d0524dd62bb55d8bbd615d`.
+Обновлены filesystem 0.6.0, Git 0.4.0, Docker/Podman 0.4.0 и HDL 0.8.0.
+TWYLT 1.1.1 и essential 0.3.0 сохраняют прежние ревизии, повторно проверенные в GitHub.
+Все toolset примера закреплены SHA, согласованными с sources.lock.json; update: always
+обновляет исходники при каждом запуске генератора. Другие source pins сохранены.
 
 В каждом ToolHub target по умолчанию:
 
@@ -286,17 +287,32 @@ toolset; отдельная настройка PYTHONPATH не требуетс�
 Пример закреплён на essential 0.3.0. Для своего YAML обновите Git ref на SHA из
 sources.lock.json и используйте update: always на время обновления.
 
-Python constraint защищает TWYLT 1.1.1 от последующего отката. Старые requirements
-файлового пака ставятся до обновлённого TWYLT; host domain dependencies используют
-те же требования без старого twylt==1.0.0 и отдельный закреплённый runtime.
-Конфликтующая версия в python-extra вызовет ошибку сборки вместо отката.
+Filesystem, Git, Docker и HDL теперь используют общий транспорт TWYLT и shared/,
+так же как essential. В каждом подключаемом паке сохраняйте tools/ и shared/ вместе.
+Сборка и установка Python-пакета для этих тулпаков не требуется. Исключение — сам
+HDL-анализатор: backend hdl-order 0.8.0 устанавливается в target hdl и на хосте
+для discovery. Wrapper-код при этом остаётся в volume всего пака.
 
-Паки filesystem/Git/Docker и TypeScript в этой версии не мигрируются. Их собственные
-встроенные проверки сохраняются; они могут требовать cwd внутри workspace независимо
-от новой переменной. Для такого worker задайте TOOLHUB_RUN_ROOT внутри его доступного
-workspace (например /workspace/.toolhub-runs для обычного worker) до миграции пака.
-Это не отменяет readonly режима Docker workspace. Не предполагается, что новый флаг
-автоматически управляет встроенными guardrails старых тулов.
+TWYLT устанавливается из закреплённого исходника до requirements файлового пака,
+который теперь требует TWYLT >=1.1.1. Constraint защищает версию 1.1.1. Docker SDK
+закреплён на 7.1.0 в common, target docker, host requirements и constraints, чтобы
+соответствовать требованиям Docker/Podman пака. Target docker устанавливает только
+requirements.txt своего пака; source pack через pip не устанавливается.
+Несовместимые дополнительные зависимости вызовут ошибку установки.
+
+Для этих новых паков больше не нужен legacy override TOOLHUB_RUN_ROOT внутри
+workspace: оставьте /tmp/toolhub-runs и TWYLT_ALLOWED_CWD по умолчанию либо свою
+согласованную пару. Для старых сторонних паков требования к cwd могут отличаться.
+Docker worker сохраняет readonly host workspace и собственную политику bind mounts.
+Git сохраняет запрет опасных настроек и hooks; локальные операции работают при
+выключенной сети, а сетевые clone/fetch/pull/push запрещаются общей политикой.
+TWYLT_DOCKER_DISABLE_NETWORK остаётся дополнительным запретом сети дочернего
+контейнера; общий TWYLT_DISABLE_NETWORK также запрещает pull образов.
+
+При guardrails=1 параметры HDL root/config/include_dirs — виртуальные workspace
+пути: например root=/project означает /workspace/project для обычного worker.
+Для Docker бизнес-корень определяется режимом docker_workspace, а не cwd.
+TypeScript runtime и docsanity-adapter этим релизом не меняются.
 
 Обновление: замените файлы images этим комплектом; используйте свежий каталог, без
 vendor/ и .sources из старых сборок. Установите domains/requirements.txt и config-loader,
@@ -304,6 +320,16 @@ vendor/ и .sources из старых сборок. Установите domains
 с полученным compose.yaml. Сохраните свой YAML, пароли, data и workspace. Docker сборка
 и контейнерный smoke в среде подготовки не запускались; результаты — TESTING.md.
 
-HDL target и host dependencies устанавливают hdl-order без extra twylt, потому что
-этот extra закрепляет старый TWYLT 1.0.0. TWYLT 1.1.1 уже установлен отдельно;
-HDL-бизнес-код и исходные tool-контракты этим изменением не редактируются.
+HDL target и host dependencies устанавливают backend hdl-order без дополнительной
+wrapper-упаковки; TWYLT уже установлен отдельно и согласован constraints.
+
+Для проверки новых паков после сборки:
+
+```bash
+./build.sh base essential git docker hdl
+sh tests/smoke-refactored-packs.sh /path/filesystem /path/git /path/docker /path/hdl-order docker
+sh tests/smoke-essential-image.sh /path/essential docker
+```
+
+Smoke запускает локальные FS/Git/HDL операции, file transport из nested cwd и
+mock Docker images API; реальный daemon этим скриптом не проверяется.

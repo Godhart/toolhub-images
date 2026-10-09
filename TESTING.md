@@ -1,3 +1,51 @@
+# Проверки toolhub-images 0.7.0
+
+Python 3.12.14, 2026-10-09. Основа: свежий GitHub clone toolhub-images 0.6.0,
+commit f00fd8678dfd5da029d0524dd62bb55d8bbd615d. Ревизии свежих паков — в SOURCES.md.
+
+- 65 passed, 1 skipped: domain, guardrails, source-pack integration и config-loader.
+- Полный пример domain обнаруживает 39 тулов из пяти свежих checkout, сохраняет
+  shared/ и формирует семь сервисов. Проверены закреплённые refs и read-only
+  workspace Docker worker. UID/GID теста соответствуют текущему пользователю.
+- Сгенерированные launcher выполняют filesystem read, Git status, Docker images
+  и HDL analysis из вложенного cwd вне workspace через input.json/output.json
+  с закрытым stdin и включёнными guardrails. Docker API замокирован;
+  HDL использует настоящий backend 0.8.0 на пустом проекте.
+- Сохранены HTTP/блокировка сети essential и прежние проверки генератора/loader.
+- TWYLT 1.1.1 и HDL backend 0.8.0 установлены из свежего GitHub source.
+  Source toolpacks не установлены как Python-дистрибутивы. Docker SDK 7.1.0;
+  builder 0.4.1; config-loader установлен локально. pip check прошёл.
+- pip dry-run --no-index требований filesystem, Git, Docker и essential с
+  обновлёнными constraints прошёл на установленных зависимостях. Полный resolver
+  domains/requirements.txt повторно не запускался.
+- Shell syntax, Python syntax, git diff --check и применимость release patch проверены.
+- Native router/worker/MCP: 1 skipped, нет подготовленного Bun/API.
+- Docker/Podman отсутствуют: сборка образов и контейнерные smoke не выполнялись.
+  Новый smoke-refactored-packs.sh проверяет mounted tools/shared, describe всех
+  тулов и запуск четырёх паков из nested cwd; Docker API в нём также замокирован.
+  test_okf_adapter.py требует отдельно собранного DocSanity CLI и не запускался.
+
+Воспроизведение после установки domains/requirements.txt и config-loader:
+
+```bash
+ESSENTIAL_SOURCE_DIR=/absolute/essential-0.3.0 \
+FILESYSTEM_SOURCE_DIR=/absolute/filesystem-0.6.0 \
+GIT_SOURCE_DIR=/absolute/git-0.4.0 \
+DOCKER_SOURCE_DIR=/absolute/docker-0.4.0 \
+HDL_SOURCE_DIR=/absolute/hdl-order-0.8.0 python -m pytest -q \
+  tests/test_domains.py tests/test_guardrails.py tests/test_pack_refresh.py \
+  tests/test_domain_runtime.py config-loader/tests/test_loader.py
+./build.sh base essential git docker hdl
+sh tests/smoke-essential-image.sh /absolute/essential-0.3.0 docker
+sh tests/smoke-refactored-packs.sh /absolute/filesystem-0.6.0 \
+  /absolute/git-0.4.0 /absolute/docker-0.4.0 /absolute/hdl-order-0.8.0 docker
+```
+
+Без переменных SOURCE_DIR соответствующие проверки свежих паков пропускаются.
+Результаты прежних релизов ниже сохранены как история.
+
+---
+
 # Проверки toolhub-images 0.6.0
 
 Python 3.12, 2026-10-08. Основа: свежий GitHub clone toolhub-images 0.5.0,

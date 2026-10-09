@@ -32,17 +32,17 @@ ENV PATH="/opt/venv/bin:/opt/tool-runtime/node_modules/.bin:${PATH}" \
 # ---- Python: core + filesystem toolpack dependencies ----
 COPY --from=sources /sources/twylt /opt/twylt-source
 COPY --from=sources /sources/twylt-pack-filesystem/requirements.txt /opt/config/python-base.txt
-# Legacy filesystem requirements pin TWYLT 1.0.0. Install dependencies first,
-# then the locked TWYLT source; never let legacy requirements downgrade the runtime.
-RUN pip install --no-cache-dir -r /opt/config/python-base.txt \
- && pip install --no-cache-dir /opt/twylt-source \
- && python -c 'import twylt, twylt.guardrails; assert twylt.__version__ == "1.1.1"' \
- && rm -rf /opt/twylt-source
+# New packs require TWYLT >=1.1.1. Install the locked library before pack requirements.
+# Constraints also prevent later installs from replacing the managed runtime/SDK.
 COPY config/python-constraints.txt /opt/config/python-constraints.txt
 ENV PIP_CONSTRAINT=/opt/config/python-constraints.txt
+RUN pip install --no-cache-dir /opt/twylt-source \
+ && pip install --no-cache-dir -r /opt/config/python-base.txt \
+ && python -c 'import twylt, twylt.guardrails; assert twylt.__version__ == "1.1.1"' \
+ && rm -rf /opt/twylt-source
 # Python Docker SDK and the configuration loader are available in every Hub image.
 COPY config-loader /opt/config-loader
-RUN pip install --no-cache-dir 'docker>=7,<8' /opt/config-loader
+RUN pip install --no-cache-dir 'docker==7.1.0' /opt/config-loader
 # ---- EXTRA PYTHON PACKAGES: edit config/python-extra.txt ----
 COPY config/python-extra.txt /opt/config/python-extra.txt
 RUN pip install --no-cache-dir -r /opt/config/python-extra.txt
@@ -97,8 +97,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends iputils-ping \
  && pip check && ping -V
 USER 1000:1000
 
-# Docker worker uses the SDK over a mounted socket; no Docker daemon in the image.
+# Git pack has only TWYLT/Pydantic dependencies already installed in common.
+# Docker pack dependencies must match its pinned source; do not install the source pack.
 FROM common AS docker
+USER root
+COPY --from=sources /sources/twylt-pack-docker/requirements.txt /opt/config/python-docker.txt
+RUN pip install --no-cache-dir -r /opt/config/python-docker.txt \
+ && python -c 'import docker, twylt; assert docker.__version__ == "7.1.0"; assert twylt.__version__ == "1.1.1"' \
+ && pip check
+USER 1000:1000
 
 # ---- Extended: Git over HTTPS and SSH ----
 FROM common AS git
@@ -121,13 +128,14 @@ RUN pip install --no-cache-dir -r /opt/config/python-docs.txt && pip check \
  && cd /opt/tool-runtime && npm install typedoc@0.28.13 markdownlint-cli2@0.18.1
 USER 1000:1000
 
-# ---- Extended: hdl-order 0.7.0 + TWYLT wrappers' backend (includes Git) ----
+# ---- Extended: hdl-order 0.8.0 + TWYLT wrappers' backend (includes Git) ----
 FROM git AS hdl
 USER root
 COPY --from=sources /sources/hdl-order /opt/hdl-order-source
 RUN apt-get update && apt-get install -y --no-install-recommends graphviz \
  && rm -rf /var/lib/apt/lists/* \
  && pip install --no-cache-dir /opt/hdl-order-source \
+ && python -c 'import hdl_order; assert hdl_order.__version__ == "0.8.0"' \
  && pip check && hdl-order --help \
  && rm -rf /opt/hdl-order-source
 USER 1000:1000

@@ -1,4 +1,4 @@
-# Архитектурные решения — toolhub-images 0.6.0
+# Архитектурные решения — toolhub-images 0.7.0
 
 1. Один multi-stage Dockerfile, четыре target. git наследует base; docs и hdl
    наследуют git. Общие зависимости обновляются в одном месте.
@@ -83,3 +83,21 @@ granting NET_RAW or removing no-new-privileges.
   Поэтому исходные tools/ и shared/ должны сохранять взаимное расположение.
 - Проверки выполняют настоящую HTTP-логику из сгенерированного launcher с nested cwd;
   smoke дополнительно проверяет отсутствие установленного essential-дистрибутива.
+
+## Дополнение 0.7.0 — интеграция новых source packs
+
+- Lock и пример domain закрепляют одни и те же полные SHA новых FS/Git/Docker/HDL.
+  Source stage по-прежнему получает исходники из GitHub; vendor не добавляется.
+- Все паки передаются целиком через toolset volumes, включая shared/. Генератор уже
+  сохраняет эту структуру, поэтому бизнес-код и guardrails в images не копируются.
+- TWYLT из source устанавливается первым: новые filesystem requirements требуют
+  >=1.1.1. Constraints действуют до первой установки, устраняя старый downgrade workaround.
+- Docker SDK 7.1.0 соответствует точному pin Docker пака. Дополнительный RUN target
+  docker устанавливает requirements.txt источника, но не сам source pack.
+- HDL backend остаётся устанавливаемым приложением 0.8.0; отдельный wrapper package
+  не нужен. Опциональный extra twylt больше не закрепляет 1.0.0, но в images TWYLT
+  управляется отдельно. Не меняем анализатор или контракты при интеграции.
+- Example update: always гарантирует refresh при генерации, а SHA гарантирует
+  воспроизводимую версию. Старые custom YAML с update: once обновляются явно.
+- Общий transport root /tmp/toolhub-runs подходит всем новым пакам, включая readonly
+  Docker workspace. Git/child-container-specific restrictions сохраняются.

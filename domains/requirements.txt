@@ -2,13 +2,13 @@
 pydantic>=2,<3
 PyYAML>=6,<7
 Jinja2>=3,<4
-docker>=7,<8
+docker==7.1.0
 toolpack-builder @ git+https://github.com/Godhart/toolpack-builder.git@c6fc228fc07793edab2e138d876f18c02132f795
 # Needed when probing HDL tools on the host.
-# The TWYLT extra pins 1.0.0; managed TWYLT is installed separately below.
-hdl-order @ git+https://github.com/Godhart/hdl-order.git@70c46c0a58230148f0e3bd9d45eec8ba1acc18de
+# Install the analyzer backend; wrapper code is mounted with tools/shared.
+hdl-order @ git+https://github.com/Godhart/hdl-order.git@4ef8a1633f475fab0b608edaa1fbcf9cbc54f71c
 # Filesystem discovery dependencies from the same pinned upstream used by the image.
 -r ../config/python-filesystem.txt
 # Managed runtime, matching sources.lock.json.
-# Essential 0.3.0 is mounted as source (including shared/), not installed with pip.
+# Essential, filesystem, Git and Docker packs are mounted source trees, not pip packages.
 twylt @ git+https://github.com/Godhart/twylt.git@bffdf247865b8e34f6c61f72327d869d8b4bd708

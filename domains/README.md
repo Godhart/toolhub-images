@@ -183,7 +183,7 @@ services:
 no-new-privileges. Поведение зависит от ядра и контейнерного движка;
 проверка образа с таким sysctl — `tests/smoke-essential-image.sh <pack-dir> [docker|podman]`.
 
-## Guardrails — images 0.6.0
+## Guardrails — images 0.7.0
 
 Генератор добавляет TWYLT_GUARDRAILS=1, TWYLT_ALLOWED_CWD и TOOLHUB_RUN_ROOT
 по умолчанию /tmp/toolhub-runs. Подкаталоги разрешены; business workspace остаётся
@@ -200,13 +200,17 @@ Host discovery использует TWYLT 1.1.1 и весь source toolset, вк
 Сохранение update: once означает, что существующий checkout не обновится сам;
 задайте update: always для обновления либо укажите новый toolset source.
 
-Для legacy-пака, который требует cwd в workspace, можно отдельно настроить worker:
+Filesystem 0.6.0, Git 0.4.0, Docker 0.4.0 и HDL wrappers 0.8.0 также используют
+общий транспорт TWYLT и shared/ в подключённом toolset. В примере их refs теперь
+закреплены SHA из sources.lock.json с update: always. Обновите свой YAML по примеру,
+повторно установите domains/requirements.txt, пересоберите образы и сгенерируйте domain.
+HDL backend 0.8.0 нужен и в target hdl, и на хосте для discovery; shared wrapper-код
+не устанавливается как Python-пакет. Docker SDK закреплён на 7.1.0.
 
-```yaml
-env:
-  TOOLHUB_RUN_ROOT: /workspace/.toolhub-runs
-```
-
-В таком случае генератор задаёт тот же TWYLT_ALLOWED_CWD. Каталог должен быть
-доступен на запись worker; readonly Docker workspace этому условию не соответствует.
-Миграция legacy-паков не включена в этот images release.
+Legacy override TOOLHUB_RUN_ROOT внутри workspace для этих версий больше не нужен.
+Сохраните согласованные TWYLT_ALLOWED_CWD/TOOLHUB_RUN_ROOT, если меняете default.
+Docker readonly host mount сохраняется; перенос run cwd в /tmp делает файловый
+транспорт независимым от прав записи в business workspace. Общий сетевой запрет
+контролирует Git remote-операции и Docker pull/child networking, сохраняя локальные
+Git/Docker API операции. HDL root/config/include_dirs при guardrails=1 используют
+виртуальные workspace пути, например /project. Сохраните data/workspace при обновлении.

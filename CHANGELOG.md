@@ -1,3 +1,12 @@
+# 0.7.0 — 2026-10-09
+
+- Pin refactored filesystem 0.6.0, Git 0.4.0, Docker/Podman 0.4.0 and HDL 0.8.0.
+- Align every example toolset ref with sources.lock.json; refresh source trees with shared/.
+- Install pinned TWYLT first, before filesystem requirements needing >=1.1.1.
+- Pin Docker SDK 7.1.0 consistently in images, host requirements and constraints.
+- Install the HDL 0.8.0 backend; keep wrapper shared code in mounted source packs.
+- Add actual generated-domain source-pack tests and container smoke scripts.
+
 # 0.6.0 — 2026-10-08
 
 - Pin GitHub TWYLT 1.1.1 and essential 0.3.0 in source lock and domain example.

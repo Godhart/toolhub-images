@@ -1,5 +1,5 @@
-# Derived from locked twylt-pack-filesystem requirements (fa5daa98ed7dd066ea1e497b41132580a31b9c1e).
-# TWYLT is managed separately at 1.1.1; remaining requirements are unchanged.
+# Derived from filesystem 371a0dce4ddfe374e369c628901ffc2e89cf1ffe.
+# TWYLT is installed from pinned source separately; external requirements follow.
 pydantic>=2,<3
 PyYAML>=6,<7
 tomli-w>=1,<2

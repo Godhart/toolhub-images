@@ -32,16 +32,16 @@ toolsets:
   - name: filesystem
     source_kind: git
     tools_kind: twylt
-    data: {path: https://github.com/Godhart/twylt-pack-filesystem.git, ref: main, update: once}
+    data: {path: https://github.com/Godhart/twylt-pack-filesystem.git, ref: 371a0dce4ddfe374e369c628901ffc2e89cf1ffe, update: always}
   - name: git
     source_kind: git
-    data: {path: https://github.com/Godhart/twylt-pack-git.git, ref: main, update: once}
+    data: {path: https://github.com/Godhart/twylt-pack-git.git, ref: 490276761d48310632e1eb037c6273861406b5fb, update: always}
   - name: docker
     source_kind: git
-    data: {path: https://github.com/Godhart/twylt-pack-docker.git, ref: main, update: once}
+    data: {path: https://github.com/Godhart/twylt-pack-docker.git, ref: 2027763bdca18b2b88877faf46fb7564b6e9de96, update: always}
   - name: hdl-order
     source_kind: git
-    data: {path: https://github.com/Godhart/hdl-order.git, ref: main, update: once}
+    data: {path: https://github.com/Godhart/hdl-order.git, ref: 4ef8a1633f475fab0b608edaa1fbcf9cbc54f71c, update: always}
   # docsanity has no suitable pack in its repository yet; deferred to next iteration.
 
 hubs:

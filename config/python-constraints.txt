@@ -1,2 +1,4 @@
-# Managed Python runtime: source revisions are in sources.lock.json
+# Managed runtime; sources are pinned in sources.lock.json
 twylt==1.1.1
+# Matches the Docker/Podman pack requirements.
+docker==7.1.0

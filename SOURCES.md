@@ -1,4 +1,4 @@
-# Источники 0.6.0
+# Источники 0.7.0
 
 Канонический список: https://github.com/Godhart/twylt/blob/main/RESOURCES.md
 Проект сборки: https://github.com/Godhart/toolhub-images
@@ -8,11 +8,14 @@
 | toolhub | [https://github.com/Talos-popcorn/toolhub](https://github.com/Talos-popcorn/toolhub) | `61c19ca0d3639545f5e7f8461b8998506a1592f7` |
 | twylt | [https://github.com/Godhart/twylt](https://github.com/Godhart/twylt) | `bffdf247865b8e34f6c61f72327d869d8b4bd708` |
 | twylt-typescript | [https://github.com/Godhart/twylt-typescript](https://github.com/Godhart/twylt-typescript) | `cd004855486e3cb485690fb5fb55b1cb0f03de42` |
-| twylt-pack-filesystem | [https://github.com/Godhart/twylt-pack-filesystem](https://github.com/Godhart/twylt-pack-filesystem) | `fa5daa98ed7dd066ea1e497b41132580a31b9c1e` |
-| hdl-order | [https://github.com/Godhart/hdl-order](https://github.com/Godhart/hdl-order) | `70c46c0a58230148f0e3bd9d45eec8ba1acc18de` |
+| twylt-pack-filesystem | [https://github.com/Godhart/twylt-pack-filesystem](https://github.com/Godhart/twylt-pack-filesystem) | `371a0dce4ddfe374e369c628901ffc2e89cf1ffe` |
+| hdl-order | [https://github.com/Godhart/hdl-order](https://github.com/Godhart/hdl-order) | `4ef8a1633f475fab0b608edaa1fbcf9cbc54f71c` |
 | docsanity | [https://github.com/Godhart/docsanity](https://github.com/Godhart/docsanity) | `0e53f00ee8006d0143f0357d01f491d406b51dbe` |
-
+| toolhub-mcp-bridge | [https://github.com/Godhart/toolhub-mcp-bridge](https://github.com/Godhart/toolhub-mcp-bridge) | `ab534b85a0ea06999c962620f281100c5e9e6267` |
+| toolpack-builder | [https://github.com/Godhart/toolpack-builder](https://github.com/Godhart/toolpack-builder) | `c6fc228fc07793edab2e138d876f18c02132f795` |
 | twylt-pack-essential | [https://github.com/Godhart/twylt-pack-essential](https://github.com/Godhart/twylt-pack-essential) | `938da46801b931f1ee0a2c67fbeedcd82313a92c` |
+| twylt-pack-git | [https://github.com/Godhart/twylt-pack-git](https://github.com/Godhart/twylt-pack-git) | `490276761d48310632e1eb037c6273861406b5fb` |
+| twylt-pack-docker | [https://github.com/Godhart/twylt-pack-docker](https://github.com/Godhart/twylt-pack-docker) | `2027763bdca18b2b88877faf46fb7564b6e9de96` |
 
 В архиве нет исходников этих проектов. Dockerfile получает их стадией sources
 через scripts/fetch-sources.py. Загрузчик принимает только полные SHA, выполняет
@@ -61,6 +64,20 @@ scripts/configure-toolhub.py на стадии сборки переводит S
 - [toolhub-mcp-bridge](https://github.com/Godhart/toolhub-mcp-bridge): самостоятельный image target, SHA в sources.lock.json.
 - `config-loader/` — интеграционный модуль из ранее подготовленного toolhub-config-loader 0.1.0; опубликованный upstream URL не был предоставлен. Он включён локально, вместе с тестами и минимальным REMOTE patch, без копии ToolHub. После публикации модуля его можно заменить закреплённой GitHub dependency.
 - Toolsets берутся из URL/ref domain YAML и подключаются volume; сторонние репозитории не включены в этот проект.
+
+## Runtime refresh 0.7.0
+
+Base: GitHub toolhub-images 0.6.0, commit f00fd8678dfd5da029d0524dd62bb55d8bbd615d.
+Fresh GitHub clones of images, TWYLT, essential, filesystem, Git, Docker and HDL
+were obtained on 2026-10-09. No previous release archives were used as source.
+TWYLT/essential versions and pins are unchanged; other refreshed pack pins are
+listed in the table above and match all domain example refs.
+
+Filesystem external host dependencies are copied from its pinned requirements,
+excluding TWYLT managed from its own locked source. New core requirements need
+TWYLT >=1.1.1, so its source installs first. Docker requirements fix SDK 7.1.0,
+also enforced by host dependencies and constraints. HDL source installs backend
+0.8.0, while wrapper tools/shared remain in volumes.
 
 ## Essential runtime 0.6.0
 

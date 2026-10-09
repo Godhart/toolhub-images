@@ -52,7 +52,7 @@ def test_dependency_lock_and_install_order():
     assert lock['sources']['twylt']['commit']=='bffdf247865b8e34f6c61f72327d869d8b4bd708'
     assert lock['sources']['twylt-pack-essential']['commit']=='938da46801b931f1ee0a2c67fbeedcd82313a92c'
     docker=(ROOT/'Dockerfile').read_text()
-    assert docker.index('pip install --no-cache-dir -r /opt/config/python-base.txt') < docker.index('pip install --no-cache-dir /opt/twylt-source')
+    assert docker.index('pip install --no-cache-dir /opt/twylt-source') < docker.index('pip install --no-cache-dir -r /opt/config/python-base.txt')
     assert 'pip install --no-cache-dir -r /opt/config/python-essential.txt' in docker
     assert 'pip install --no-cache-dir /opt/essential-source' not in docker
     assert 'twylt-pack-essential' not in (ROOT/'config/python-constraints.txt').read_text()
