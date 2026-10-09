@@ -44,7 +44,7 @@ Bridge можно отключить: `bridge.enabled: false`. Bridge этого
 
 `domain.network` — boolean, по умолчанию `true`. `hubs[].network` переопределяет
 его для конкретного worker; отсутствие поля или `null` наследует значение домена.
-Router и MCP bridge используют значение домена.
+Router и MCP bridge всегда подключены к внешней сети для доступа через опубликованные порты. Ограничение домена применяется к workers.
 
 ```yaml
 domain:
@@ -62,7 +62,7 @@ hubs:
 Генератор создаёт `domain-internal` с `internal: true` и подключает к ней все
 сервисы. Router продолжает обращаться к workers через DNS-имена Compose.
 Сервисы с разрешённым внешним доступом дополнительно подключаются к
-`domain-egress`; при отсутствии таких сервисов эта сеть не создаётся.
+`domain-egress`. Router и MCP bridge подключены к ней всегда; workers — только при разрешённой сети.
 Это использует стандартную [сетевую изоляцию Compose](https://docs.docker.com/reference/compose-file/networks/#internal).
 Параметр управляет исходящим доступом за пределы домена, опубликованные порты
 router/bridge/workers остаются заданными через host и port.
@@ -129,7 +129,21 @@ worker для запуска. Общие зависимости устанавл
 Python TWYLT; TypeScript runtime остаётся в базовом образе, автоматического
 TypeScript discovery здесь нет.
 
-`packs[].prefix` определяет путь категории внутри worker. `exclude` принимает
+`packs[].prefix` определяет путь категории внутри worker. `prefix: "/"` и
+`prefix: ""` размещают тулы в корне (`/tool-name`); отсутствие prefix или null
+оставляет категорию `/<toolset>`. Несколько паков можно разместить в одном корне;
+совпадающие имена тулов и дочерних категорий отклоняются до записи настроек.
+Например:
+
+```yaml
+packs:
+  - toolset: essential
+    prefix: ""
+  - toolset: filesystem
+    prefix: "/"
+```
+
+ `exclude` принимает
 имена инструментов или glob относительного файла. `toolpak_builder_kwargs`
 (совместимость с черновиком; также принимается `toolpack_builder_kwargs`) допускает
 `glob`, `excludes`, `python`, `probe_timeout`, `category_mode`, `timeout_ms`.
@@ -183,7 +197,7 @@ services:
 no-new-privileges. Поведение зависит от ядра и контейнерного движка;
 проверка образа с таким sysctl — `tests/smoke-essential-image.sh <pack-dir> [docker|podman]`.
 
-## Guardrails — images 0.7.0
+## Guardrails — images 0.7.1
 
 Генератор добавляет TWYLT_GUARDRAILS=1, TWYLT_ALLOWED_CWD и TOOLHUB_RUN_ROOT
 по умолчанию /tmp/toolhub-runs. Подкаталоги разрешены; business workspace остаётся

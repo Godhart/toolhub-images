@@ -180,11 +180,11 @@ def test_network_inheritance_and_overrides(fixture,default,override):
     put(path,c);generate(path)
     compose=yaml.safe_load((path.parent/'generated/compose.yaml').read_text())
     services=compose['services'];effective=default if override is None else override
-    for name,enabled in [('toolhub-test',default),('toolhub-test-mcp',default),('toolhub-test-worker',effective)]:
+    for name,enabled in [('toolhub-test',True),('toolhub-test-mcp',True),('toolhub-test-worker',effective)]:
         assert services[name]['networks']==['domain-internal']+(['domain-egress'] if enabled else [])
         assert 'network_mode' not in services[name]
     assert compose['networks']['domain-internal']=={'internal':True}
-    assert ('domain-egress' in compose['networks'])==(default or effective)
+    assert 'domain-egress' in compose['networks']
     if default or effective: assert compose['networks']['domain-egress']=={'internal':False}
     assert services['toolhub-test']['ports'][0]['published']==str(c['domain'].get('port_base',3300))
 
@@ -196,8 +196,8 @@ def test_network_defaults_and_private_domain(fixture):
     c['domain']['network']=False;c['hubs']=[];c['toolsets']=[];c['bridge']={'enabled':False}
     put(path,c);generate(path)
     compose=yaml.safe_load((path.parent/'generated/compose.yaml').read_text())
-    assert compose['networks']=={'domain-internal':{'internal':True}}
-    assert compose['services']['toolhub-test']['networks']==['domain-internal']
+    assert compose['networks']=={'domain-internal':{'internal':True},'domain-egress':{'internal':False}}
+    assert compose['services']['toolhub-test']['networks']==['domain-internal','domain-egress']
 
 
 @pytest.mark.parametrize('default,override',[(False,None),(False,True),(True,None),(True,False)])
@@ -220,3 +220,19 @@ def test_invalid_network_policy_before_writes(fixture,change):
     path,c,src=fixture;change(c);put(path,c)
     with pytest.raises(ValidationError):generate(path)
     assert not (path.parent/'generated').exists()
+
+
+@pytest.mark.parametrize('prefix', ['', '/', None, 'nested/path'])
+def test_pack_target_prefix(fixture,prefix):
+    path,c,src=fixture
+    c['hubs'][0]['packs'][0]['prefix']=prefix
+    put(path,c);generate(path)
+    data=yaml.safe_load((path.parent/'generated/config/worker/toolhub.yaml').read_text())
+    expected='/echo' if prefix is None else ('/' if prefix in ('','/') else '/nested/path')
+    assert data['toolpacks'][0]['path']==expected
+
+
+def test_multiple_root_packs():
+    from models import Hub
+    hub=Hub(name='worker',image='test',packs=[{'toolset':'one','prefix':''},{'toolset':'two','prefix':'/'}])
+    assert [p.target_path for p in hub.packs]==['/','/']

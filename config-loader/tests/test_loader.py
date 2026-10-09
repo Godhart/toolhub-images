@@ -25,6 +25,30 @@ class LoaderTests(unittest.TestCase):
         with sqlite3.connect(self.db) as db: return db.execute(f'SELECT * FROM {table}').fetchall()
     def snapshot(self):
         with sqlite3.connect(self.db) as db: return '\n'.join(db.iterdump())
+    def test_root_pack_tools_and_children(self):
+        self.config['toolpacks'][0]['path']='/'
+        child=dict(self.pack['category'], name='Child', slug='child', children=[])
+        self.pack['category']['children']=[child]
+        plan=self.plan()
+        self.assertEqual(set(plan['tools']),{'/echo','/child/echo'})
+        apply_config(self.db,plan)
+        with sqlite3.connect(self.db) as db:
+            paths={row[0] for row in db.execute('SELECT fullPath FROM Category')}
+        self.assertEqual(paths,{'/','/child'})
+        before=self.snapshot();apply_config(self.db,plan)
+        self.assertEqual(before,self.snapshot())
+
+    def test_root_packs_merge_and_detect_tool_collision(self):
+        self.config['toolpacks'][0]['path']='/'
+        other=json.loads(json.dumps(self.pack))
+        other['category']['tools'][0].update(name='Other',slug='other')
+        (self.root/'other.json').write_text(json.dumps(other))
+        self.config['toolpacks'].append({'file':'other.json','path':'/','runner':'Python'})
+        self.assertEqual(set(self.plan()['tools']),{'/echo','/other'})
+        other['category']['tools'][0]['slug']='echo'
+        (self.root/'other.json').write_text(json.dumps(other))
+        with self.assertRaisesRegex(ConfigError,'Duplicate tool path: /echo'):self.plan()
+
     def test_repeat_keeps_ids_and_history(self):
         plan=self.plan(); apply_config(self.db,plan); before=self.snapshot(); apply_config(self.db,plan)
         self.assertEqual(before,self.snapshot()); self.assertEqual(len(self.rows('ToolVersion')),1)

@@ -112,8 +112,8 @@ class Pack(Strict):
 
     @model_validator(mode='after')
     def options(self):
-        if self.prefix is not None and not re.fullmatch(r'/?[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)*', self.prefix):
-            raise ValueError('prefix must be a nonempty ToolHub category path')
+        if self.prefix not in (None, '', '/') and not re.fullmatch(r'/?[a-z0-9]+(?:-[a-z0-9]+)*(?:/[a-z0-9]+(?:-[a-z0-9]+)*)*', self.prefix):
+            raise ValueError('prefix must be /, empty, or a ToolHub category path')
         allowed = {'glob','excludes','python','probe_timeout','category_mode','timeout_ms'}
         if set(self.toolpak_builder_kwargs) - allowed:
             raise ValueError('unsupported toolpack-builder option')
@@ -123,6 +123,10 @@ class Pack(Strict):
             if field in self.toolpak_builder_kwargs and (not isinstance(self.toolpak_builder_kwargs[field],(int,float)) or self.toolpak_builder_kwargs[field] <= 0):
                 raise ValueError('builder deadlines must be positive')
         return self
+
+    @property
+    def target_path(self):
+        return '/' + (self.toolset if self.prefix is None else self.prefix).strip('/')
 
 class Hub(Strict):
     name: Name
@@ -146,7 +150,7 @@ class Hub(Strict):
             raise ValueError('hub name mcp is reserved for the bridge')
         if len({p.toolset for p in self.packs}) != len(self.packs):
             raise ValueError('each toolset may occur only once per hub')
-        paths = ['/' + (p.prefix or p.toolset).strip('/') for p in self.packs]
+        paths = [p.target_path for p in self.packs if p.target_path != '/']
         if len(paths) != len(set(paths)):
             raise ValueError('duplicate pack prefix')
         return self

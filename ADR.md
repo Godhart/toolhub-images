@@ -1,4 +1,4 @@
-# Архитектурные решения — toolhub-images 0.7.0
+# Архитектурные решения — toolhub-images 0.7.1
 
 1. Один multi-stage Dockerfile, четыре target. git наследует base; docs и hdl
    наследуют git. Общие зависимости обновляются в одном месте.
@@ -101,3 +101,12 @@ granting NET_RAW or removing no-new-privileges.
   воспроизводимую версию. Старые custom YAML с update: once обновляются явно.
 - Общий transport root /tmp/toolhub-runs подходит всем новым пакам, включая readonly
   Docker workspace. Git/child-container-specific restrictions сохраняются.
+
+## 0.7.1: транспорт и корневые паки
+
+Сетевая политика домена ограничивает workers; router/bridge всегда имеют внешнюю
+Compose сеть для опубликованных портов. Внутренняя связь с workers сохраняется.
+None у prefix означает имя пака; пустая строка и / — корень. Root category /
+использует существующий механизм ToolCategory и вызова /tool. Loader объединяет
+корневые паки, нормализует пути детей и отвергает конфликты. Контейнерная адаптация
+API добавляет тулы в root discovery и скрывает служебную категорию / из списка.

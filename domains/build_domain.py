@@ -139,7 +139,8 @@ def make_compose(config, root, tools, workspace):
                 'healthcheck':{'test':['CMD','python','-c','from pathlib import Path; import socket; assert Path("/tmp/toolhub-config.ready").exists(); socket.create_connection(("127.0.0.1",3000),2).close()'],
                                'interval':'5s','timeout':'3s','start_period':'90s','retries':12}}
         data['networks'] = ['domain-internal']
-        if network_enabled(config,hub):
+        # Published router ports require a non-internal network even offline.
+        if hub is None or network_enabled(config,hub):
             data['networks'].append('domain-egress')
         offset = hub.port if hub else 0
         if offset is not None:
@@ -180,8 +181,7 @@ def make_compose(config, root, tools, workspace):
             'depends_on':{router:{'condition':'service_healthy'}}}
     if config.bridge.enabled:
         services[router+'-mcp']['networks'] = ['domain-internal']
-        if network_enabled(config):
-            services[router+'-mcp']['networks'].append('domain-egress')
+        services[router+'-mcp']['networks'].append('domain-egress')
     networks = {'domain-internal': {'internal': True}}
     if any('domain-egress' in service['networks'] for service in services.values()):
         networks['domain-egress'] = {'internal': False}
@@ -316,7 +316,7 @@ def generate(source, check=False):
             for pack in hub.packs:
                 payload = build_pack(pack,origins[pack.toolset])
                 write(configs/hub.name/(pack.toolset+'.toolpack'),json.dumps(payload,ensure_ascii=False,indent=2)+'\n')
-                value['toolpacks'].append({'file':pack.toolset+'.toolpack','path':'/'+(pack.prefix or pack.toolset).strip('/'),'runner':RUNNER['name']})
+                value['toolpacks'].append({'file':pack.toolset+'.toolpack','path':pack.target_path,'runner':RUNNER['name']})
             write(configs/hub.name/'toolhub.yaml',yaml_text(value))
             load_config(configs/hub.name/'toolhub.yaml',env=env_for(config,workspace,hub))
         router = hub_config(config)

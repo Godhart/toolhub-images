@@ -188,7 +188,7 @@ python tests/test_okf_adapter.py
 ограничения OKF 0.2.0: нет автоматического merge внешних правок, автогенерации
 текста моделью или автоматической оценки инженерной полноты документа.
 
-## Совместимость с images 0.7.0
+## Совместимость с images 0.7.1
 
 Targets docsanity и alias okf сохранены. Python TWYLT обновлён до 1.1.1;
 общие defaults guardrails/cwd наследуются от common. Сам docsanity upstream

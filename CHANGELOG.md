@@ -1,3 +1,10 @@
+# 0.7.1 — 2026-10-09
+
+- Keep router and MCP bridge externally reachable with domain.network=false.
+- Accept / and empty pack prefix for root tools; preserve null/default semantics.
+- Merge root packs, normalize child paths and reject collisions before writes.
+- Add root tool discovery to the pinned ToolHub API adaptation; loader 0.1.1.
+
 # 0.7.0 — 2026-10-09
 
 - Pin refactored filesystem 0.6.0, Git 0.4.0, Docker/Podman 0.4.0 and HDL 0.8.0.

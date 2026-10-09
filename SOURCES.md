@@ -1,4 +1,4 @@
-# Источники 0.7.0
+# Источники 0.7.1
 
 Канонический список: https://github.com/Godhart/twylt/blob/main/RESOURCES.md
 Проект сборки: https://github.com/Godhart/toolhub-images

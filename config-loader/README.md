@@ -1,6 +1,6 @@
 # ToolHub configuration loader integration
 
-Integrated from toolhub-config-loader-0.1.0 prepared on 2026-10-04.
+Integrated from toolhub-config-loader-0.1.1 prepared on 2026-10-04.
 The loader had no accessible published GitHub repository when integrated.
 Only its Python package, schema, license, relevant regression tests and the REMOTE
 identity fix are kept here (no ToolHub source copy). This module is now part of

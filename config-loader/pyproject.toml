@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "toolhub-config-loader"
-version = "0.1.0"
+version = "0.1.1"
 description = "Transactional startup configuration for ToolHub"
 requires-python = ">=3.10"
 dependencies = ["PyYAML>=6.0.2,<7", "jsonschema>=4.23,<5"]

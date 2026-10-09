@@ -25,3 +25,19 @@ seed.write_text(text.replace(old, 'credentials configured'))
 replace_once(root / "apps/api/src/index.ts",
     "path.join(os.tmpdir(), `hub_run_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`)",
     "path.join(process.env.TOOLHUB_RUN_ROOT || os.tmpdir(), `hub_run_${Date.now()}_${Math.random().toString(36).slice(2, 6)}`)")
+
+# Root-mounted source packs use the existing fullPath='/' tool binding.
+# Expose their tools in root discovery alongside ordinary root categories.
+replace_once(root / "apps/api/src/index.ts",
+    "categories: rootCats.map(c => ({",
+    """tools: (await prisma.toolCategory.findMany({
+        where: { category: { fullPath: '/', isActive: true }, tool: { isActive: true } },
+        include: { tool: true }
+      })).map(({ tool }) => ({
+        name: tool.name, path: normalizePath('/' + tool.slug),
+        description: tool.agentDescription,
+        inputSchema: safeParseJson(tool.inputSchema, {}),
+        outputSchema: safeParseJson(tool.outputSchema, {}),
+        callExample: `<hub>callTool("/${tool.slug}", {})</hub>`
+      })),
+      categories: rootCats.filter(c => c.fullPath !== '/').map(c => ({""")

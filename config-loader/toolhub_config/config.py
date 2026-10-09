@@ -113,7 +113,7 @@ def load_config(path, env=None, mode=None):
         if data.get('isMcpProxy'):
             raise ConfigError('Promoted MCP proxy tools are not portable; configure the MCP server instead')
         tool_slug = data.get('slug') or slug(data['name'])
-        key = target + '/' + tool_slug
+        key = target.rstrip('/') + '/' + tool_slug
         if key in plan['tools']:
             raise ConfigError(f'Duplicate tool path: {key}')
         plan['tools'][key] = dict(data, slug=tool_slug, _category=target, _runner=runner)
@@ -128,13 +128,18 @@ def load_config(path, env=None, mode=None):
             url_check(node.get('remoteUrl') or '')
         if kind == 'MCP' and not node.get('mcpCommand'):
             raise ConfigError('MCP category requires mcpCommand')
-        category(full_path, data)
+        if full_path == '/':
+            if kind != 'LOCAL':
+                raise ConfigError('Root toolpack must be LOCAL')
+            category('/', dict(name='Root', type='LOCAL'), False)
+        else:
+            category(full_path, data)
         if kind == 'MCP' and node.get('isActive', True):
             plan['sync'].append(full_path)
         for item in node.get('tools', []):
             tool(full_path, item, runner)
         for child in node.get('children', []):
-            pack_node(child, full_path + '/' + (child.get('slug') or slug(child['name'])), runner)
+            pack_node(child, full_path.rstrip('/') + '/' + (child.get('slug') or slug(child['name'])), runner)
 
     for item in config.get('toolpacks', []):
         payload = read_document(path.parent / item['file'])

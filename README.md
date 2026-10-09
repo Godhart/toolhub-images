@@ -1,4 +1,4 @@
-# ToolHub TWYLT Container Images 0.7.0
+# ToolHub TWYLT Container Images 0.7.1
 
 Образы Docker/Podman для ToolHub и запуска TWYLT-тулов с хоста.
 Один Dockerfile содержит варианты ToolHub и отдельный target MCP bridge.
@@ -333,3 +333,15 @@ sh tests/smoke-essential-image.sh /path/essential docker
 
 Smoke запускает локальные FS/Git/HDL операции, file transport из nested cwd и
 mock Docker images API; реальный daemon этим скриптом не проверяется.
+
+## Исправления 0.7.1
+
+Основа — архив 0.7.0, без новых ревизий GitHub.
+Router и MCP bridge всегда подключены к domain-egress, даже при domain.network: false.
+Workers сохраняют наследование/override сетевой политики. Доступ извне также
+зависит от domain.host: для других компьютеров укажите 0.0.0.0 или нужный адрес хоста.
+Префиксы packs[].prefix: "/" и "" размещают тулы в корне worker;
+null/отсутствие поля сохраняет категорию по имени пака. Несколько корневых паков
+объединяются с проверкой конфликтов. Root discovery ToolHub показывает их тулы.
+Пересоберите образы (встроен loader 0.1.1 и правка API ToolHub), повторно запустите
+генератор domain и пересоздайте контейнеры Compose. Базы сохраняются.
