@@ -28,30 +28,30 @@ toolsets:
   - name: essential
     source_kind: git
     tools_kind: twylt
-    data: {path: https://github.com/Godhart/twylt-pack-essential.git, ref: 938da46801b931f1ee0a2c67fbeedcd82313a92c, update: always}
+    data: {path: https://github.com/Godhart/twylt-pack-essential.git, ref: 938da46801b931f1ee0a2c67fbeedcd82313a92c, update: once}
   - name: filesystem
     source_kind: git
     tools_kind: twylt
-    data: {path: https://github.com/Godhart/twylt-pack-filesystem.git, ref: 371a0dce4ddfe374e369c628901ffc2e89cf1ffe, update: always}
+    data: {path: https://github.com/Godhart/twylt-pack-filesystem.git, ref: 371a0dce4ddfe374e369c628901ffc2e89cf1ffe, update: once}
   - name: git
     source_kind: git
-    data: {path: https://github.com/Godhart/twylt-pack-git.git, ref: 490276761d48310632e1eb037c6273861406b5fb, update: always}
+    data: {path: https://github.com/Godhart/twylt-pack-git.git, ref: 490276761d48310632e1eb037c6273861406b5fb, update: once}
   - name: docker
     source_kind: git
-    data: {path: https://github.com/Godhart/twylt-pack-docker.git, ref: 2027763bdca18b2b88877faf46fb7564b6e9de96, update: always}
+    data: {path: https://github.com/Godhart/twylt-pack-docker.git, ref: 2027763bdca18b2b88877faf46fb7564b6e9de96, update: once}
   - name: hdl-order
     source_kind: git
-    data: {path: https://github.com/Godhart/hdl-order.git, ref: 4ef8a1633f475fab0b608edaa1fbcf9cbc54f71c, update: always}
+    data: {path: https://github.com/Godhart/hdl-order.git, ref: 4ef8a1633f475fab0b608edaa1fbcf9cbc54f71c, update: once}
   # docsanity has no suitable pack in its repository yet; deferred to next iteration.
 
 hubs:
-  - name: essential
+  - name: t1
     network: true
     image: toolhub-twylt:essential
     port: 1
     # For web_search set env: {TWYLT_SEARXNG_URL: 'http://your-searxng:8080'}
-    packs: [{toolset: essential, prefix: essential}]
-  - name: filesystem
+    packs: [{toolset: essential}]
+  - name: t2
     image: toolhub-twylt:base
     port: 2                       # omit/null to keep worker private inside Compose
     kind: general
@@ -60,16 +60,17 @@ hubs:
     limits: {tmp: 128m, pids: 128, mem: 1g, cpu: 1.0}
     packs:
       - toolset: filesystem
-        prefix: filesystem
+        prefix: filesystem        # NOTE: if ommitted then defaults to toolset name
         exclude: []               # TWYLT names or relative file globs
         # toolpak_builder_kwargs: {glob: '**/tool.py', timeout_ms: 120000}
     mcps: []                      # nonempty values are rejected in this iteration
-  - name: git
+  - name: t3
     network: true
     image: toolhub-twylt:git
     port: 3
-    packs: [{toolset: git, prefix: git}]
-  - name: docker
+    packs: [{toolset: git}]
+  - name: t4
+    network: true
     image: toolhub-twylt:docker
     kind: docker
     port: 4
@@ -77,7 +78,7 @@ hubs:
     # docker_socket_gid: 998       # optional: otherwise stat() the socket on generation host
     docker_workspace: host-readonly # same absolute host path, read-only; no /workspace mount
     packs: [{toolset: docker, prefix: exec}]
-  - name: hdl
+  - name: t5
     image: toolhub-twylt:hdl
     port: 5
     packs: [{toolset: hdl-order, prefix: hdl}]
